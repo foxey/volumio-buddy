@@ -6,11 +6,11 @@ import wiringpi
 
 def volumio_buddy_setup():
     global _volumio_buddy_is_setup
-    if not 'volumio_buddy_is_setup' in vars():
-        volumio_buddy_is_setup = True
+    if not '_volumio_buddy_is_setup' in globals():
+        _volumio_buddy_is_setup = True
         wiringpi.wiringPiSetup()
-    elif not volumio_buddy_is_setup == True:
-        volumio_buddy_is_setup = True
+    elif not _volumio_buddy_is_setup == True:
+        _volumio_buddy_is_setup = True
         wiringpi.wiringPiSetup()
 
 class RotaryEncoder:
