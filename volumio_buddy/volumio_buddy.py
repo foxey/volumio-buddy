@@ -2,7 +2,18 @@
 # Author: Michiel Fokke <michiel@fokke.org>
 # vim: set ts=4 sw=4 expandtab si:
 
+# Import for buttons and LED's
 import wiringpi
+
+# Imports for OLED display
+import Adafruit_SSD1306
+from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
+
+# Import for Volumio websocket client
+from socketIO_client import SocketIO, LoggingNamespace
+import json
 
 def volumio_buddy_setup():
     global _volumio_buddy_is_setup
@@ -16,8 +27,10 @@ def volumio_buddy_setup():
 class RotaryEncoder:
     """ Class to register callback functions for left and right turns on
         a rotary encoder """
+
     LEFT = 0
     RIGHT = 1
+
     def __init__(self, gpio_pin_a, gpio_pin_b):
         volumio_buddy_setup()
         self.in_critical_section = False
@@ -28,11 +41,13 @@ class RotaryEncoder:
         wiringpi.pinMode(gpio_pin_b, 0)
 
     def set_callback(self, callback_function):
+        """ Register a function that is called when the knob is turned """
         self.callback_function = callback_function
         wiringpi.wiringPiISR(self.gpio_pin_a, wiringpi.INT_EDGE_BOTH, self._decode_rotary)
         wiringpi.wiringPiISR(self.gpio_pin_b, wiringpi.INT_EDGE_BOTH, self._decode_rotary)
 
     def _decode_rotary(self):
+        """ Internal class that determines the state of the switches """
         if self.in_critical_section == True:
             return
         self.in_critical_section = True
@@ -46,4 +61,64 @@ class RotaryEncoder:
             self.callback_function(RotaryEncoder.RIGHT)
         self.prev_state = new_state
         self.in_critical_section = False
+
+class Display:
+    """ Class for the user interface using a 164x64 OLED SSD1306 compatible display """
+
+    def __init__(self, reset_pin):
+        self.reset_pin = reset_pin
+        self._display =  Adafruit_SSD1306.SSD1306_128_64(rst=reset_pin)
+        self._display.begin()
+        self.width = self._display.width
+        self.height = self._display.height
+        self.clear()
+
+        self._image = Image.new('1', (self.width, self.height))
+        self._draw = ImageDraw.Draw(self._image)
+
+    def image(self, filename):
+        """ Show a logo """
+        try:
+            self._image = Image.open(filename). \
+                resize((self.width, self.height), Image.ANTIALIAS).convert('1')
+            self._display.image(self._image)
+            self._display.display()
+        except IOError:
+            pass 
+
+    def clear(self):
+        """ Clear the display """
+        self._display.clear()
+        self._display.display()
+
+class VolumioClient:
+    """ Class for the websocket client to Volumio """
+
+    def __init__(self):
+        HOSTNAME='localhost'
+        PORT=3000
+
+        self._callback = False
+
+        def _on_pushState(*args):
+            self.state = args[0]
+            if self._callback:
+                self._callback(self.state)
+
+        self._client = SocketIO(HOSTNAME, PORT, LoggingNamespace)
+        self._client.on('pushState', _on_pushState)
+        self._client.emit('getState', _on_pushState)
+        self._client.wait_for_callbacks(seconds=1)
+
+    def set_callback(self, callback):
+        self._callback = callback
+
+    def volume_up(self):
+        self._client.emit('volume', '+')
+
+    def volume_down(self):
+        self._client.emit('volume', '-')
+               
+    def wait(self):
+        self._client.wait()
 
