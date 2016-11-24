@@ -87,6 +87,35 @@ class RotaryEncoder:
         self.prev_state = new_state
         self.in_critical_section = False
 
+class RGBLED:
+    """ Class to drive an RGB LED with soft PWM """
+
+    def __init__(self, gpio_pin_r, gpio_pin_g, gpio_pin_b):
+        volumio_buddy_setup()
+        self.gpio_pin_r = gpio_pin_r
+        self.gpio_pin_g = gpio_pin_g
+        self.gpio_pin_b = gpio_pin_b
+        self.r_value = 0
+        self.g_value = 0
+        self.b_value = 0
+        wiringpi.pinMode(gpio_pin_r, 1)
+        wiringpi.pinMode(gpio_pin_g, 1)
+        wiringpi.pinMode(gpio_pin_b, 1)
+        wiringpi.softPwmCreate(gpio_pin_r, 0, 100)
+        wiringpi.softPwmCreate(gpio_pin_g, 0, 100)
+        wiringpi.softPwmCreate(gpio_pin_b, 0, 100)
+
+    def set(self, r_value, g_value, b_value):
+        self.r_value = r_value
+        self.g_value = g_value
+        self.b_value = b_value
+        wiringpi.softPwmWrite(self.gpio_pin_r, r_value)
+        wiringpi.softPwmWrite(self.gpio_pin_g, g_value)
+        wiringpi.softPwmWrite(self.gpio_pin_b, b_value)
+
+    def get(self):
+        return (self.r_value, self.g_value, self.b_value)
+
 class Display:
     """ Class for the user interface using a 164x64 OLED SSD1306 compatible display """
 
