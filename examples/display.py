@@ -1,4 +1,4 @@
-#!/usr./bin/python
+#!/usr/bin/python
 # Copyright (c) 2016 Michiel Fokke
 # Author: Michiel Fokke <michiel@fokke.org>
 # vim: set ts=4 sw=4 expandtab si:

@@ -2,6 +2,9 @@
 # Author: Michiel Fokke <michiel@fokke.org>
 # vim: set ts=4 sw=4 expandtab si:
 
+# Import time function
+from time import time
+
 # Import for buttons and LED's
 import wiringpi
 
@@ -24,6 +27,27 @@ def volumio_buddy_setup():
         _volumio_buddy_is_setup = True
         wiringpi.wiringPiSetup()
 
+class PushButton:
+    """ Class to register a callback function for a pushbutton """
+
+    def __init__(self, gpio_pin):
+        volumio_buddy_setup()
+        self.callback_function = False
+        self.last_push = 0
+        self.minimum_delay = 0.5
+        self.gpio_pin = gpio_pin
+        wiringpi.pinMode(gpio_pin, 0)
+
+    def set_callback(self, callback_function):
+        """ Register a function that is called when the knob is turned """
+        self.callback_function = callback_function
+        wiringpi.wiringPiISR(self.gpio_pin, wiringpi.INT_EDGE_BOTH, self._callback)
+
+    def _callback(self):
+        if time() - self.last_push > self.minimum_delay:
+            self.last_push = time()
+            self.callback_function()
+
 class RotaryEncoder:
     """ Class to register callback functions for left and right turns on
         a rotary encoder """
@@ -33,6 +57,7 @@ class RotaryEncoder:
 
     def __init__(self, gpio_pin_a, gpio_pin_b):
         volumio_buddy_setup()
+        self.callback_function = False
         self.in_critical_section = False
         self.prev_state = 0
         self.gpio_pin_a = gpio_pin_a
@@ -48,7 +73,7 @@ class RotaryEncoder:
 
     def _decode_rotary(self):
         """ Internal class that determines the state of the switches """
-        if self.in_critical_section == True:
+        if self.in_critical_section == True or not self.callback_function:
             return
         self.in_critical_section = True
         MSB = wiringpi.digitalRead(self.gpio_pin_a)
@@ -112,6 +137,21 @@ class VolumioClient:
 
     def set_callback(self, callback):
         self._callback = callback
+
+    def play(self):
+        self._client.emit('play')
+
+    def pause(self):
+        self._client.emit('pause')
+
+    def toggle_play(self):
+        try:
+            if self.state["status"] == "play":
+                self._client.emit('pause')
+            else:
+                self._client.emit('play')
+        except KeyError:
+            self._client.emit('play')
 
     def volume_up(self):
         self._client.emit('volume', '+')
