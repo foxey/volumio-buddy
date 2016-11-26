@@ -3,7 +3,10 @@
 # vim: set ts=4 sw=4 expandtab si:
 
 # Import time function
-from time import time
+from time import time, sleep
+
+# Import thread library for modal timeout handling
+import thread
 
 # Import for buttons and LED's
 import wiringpi
@@ -52,8 +55,8 @@ class RotaryEncoder:
     """ Class to register callback functions for left and right turns on
         a rotary encoder """
 
-    LEFT = 0
-    RIGHT = 1
+    LEFT = 1
+    RIGHT = 2
 
     def __init__(self, gpio_pin_a, gpio_pin_b):
         volumio_buddy_setup()
@@ -119,16 +122,44 @@ class RGBLED:
 class Display:
     """ Class for the user interface using a 164x64 OLED SSD1306 compatible display """
 
+# Text modal type definitions
+    MODAL_PLAY = 1
+    MODAL_PAUSE = 2
+    MODAL_STOP = 3
+# Text label definitions
+    TXT_VOLUME = "Volume"
+    TXT_PLAY = "Play"
+    TXT_PAUSE = "Pause"
+    TXT_STOP = "Stop"
+
     def __init__(self, reset_pin):
         self.reset_pin = reset_pin
         self._display =  Adafruit_SSD1306.SSD1306_128_64(rst=reset_pin)
+        self._modal_timeout = 0
+        self._dirty = False
         self._display.begin()
         self.width = self._display.width
         self.height = self._display.height
         self.clear()
 
+# Define image and draw objects for main screen and modal screen
         self._image = Image.new('1', (self.width, self.height))
         self._draw = ImageDraw.Draw(self._image)
+
+        self._modal_image = Image.new('1', (self.width, self.height))
+        self._modal_draw = ImageDraw.Draw(self._image)
+
+# Load font. If TTF file is not found, load default font
+# Make sure the .ttf font file is in the same directory as
+# the python script!
+# Some other nice fonts to try: http://www.dafont.com/bitmap.php
+        try:
+            self._font = ImageFont.truetype('pixChicago.ttf', 10)
+        except:
+            self._font = ImageFont.load_default()
+
+# Start thread that will update the screen regulary
+        thread.start_new_thread(self._update, ())
 
     def image(self, filename):
         """ Show a logo """
@@ -140,10 +171,132 @@ class Display:
         except IOError:
             pass 
 
+    def _update(self):
+        """ Clear the display """
+        next_update_time = 0
+        while True:
+            if time()-next_update_time > 0:
+                next_update_time = time()+1
+                if (time()-self._modal_timeout) > 0:
+                    self._display.image(self._image)
+                    self._display.display()
+            sleep(.25)
+
     def clear(self):
         """ Clear the display """
         self._display.clear()
+#        self._display.display()
+
+    def volume_modal(self, level, delay):
+        textlabel = Display.TXT_VOLUME + ' ' + str(int(level))
+        self._display.image(BarModal(self._image, self._font, textlabel, level).image())
         self._display.display()
+        self._modal_timeout = time() + delay
+
+    def text_modal(self, modal_type, delay):
+        if modal_type == Display.MODAL_PLAY:
+            textlabel = Display.TXT_PLAY
+        elif modal_type == Display.MODAL_PAUSE:
+            textlabel = Display.TXT_PAUSE
+        elif modal_type == Display.MODAL_STOP:
+            textlabel = Display.TXT_STOP
+        else:
+            textlabel = "Huh?"
+        self._display.image(Modal(self._image, self._font, textlabel).image())
+        self._display.display()
+        self._modal_timeout = time() + delay
+
+    def volume_modal_old(self, level, delay):
+
+        textlabel = Display.TXT_VOLUME + ' ' + str(int(level))
+        self._modal_image = self._image.copy()
+        self._modal_draw = ImageDraw.Draw(self._modal_image)
+
+        x = 4
+        y = int(.2*self.height)
+
+        textwidth, textheight = self._modal_draw.textsize(textlabel, font=self._font)
+
+        width = self.width -2*x 
+        height = self.height - 2*y
+        x_padding = 8
+        y_padding = 8
+        bar_height = 6
+        xtext = int((width-textwidth)/2)
+        ytext = y+4
+
+        self._modal_draw.rectangle((x, y, x+width, y+height), outline=1, fill=0)
+        self._modal_draw.rectangle((x+x_padding, y+height-y_padding-bar_height, \
+                       x+width-x_padding, y+height-y_padding), outline=1, fill=0)
+        self._modal_draw.rectangle((x+x_padding, y+height-y_padding-bar_height, \
+                       x+int(width*level/100)-x_padding, y+height-y_padding), outline=1, fill=1)
+        self._modal_draw.text((xtext, ytext), textlabel, font=self._font, fill=255)
+        self._display.image(self._modal_image)
+        self._display.display()
+        self._modal_timeout = time() + delay
+
+class Modal:
+    """ Class that creates a modal with a textlabel """
+
+    def __init__(self, image, font, textlabel):
+
+        self._image = image.copy()
+        (image_width, image_height) = self._image.size
+        self._draw = ImageDraw.Draw(self._image)
+
+        x = 4
+        y_fraction = 0.2
+        y = int(y_fraction*image_height)
+
+        width = image_width - 2*x 
+        height = image_height - 2*y
+        x_padding = 8
+        y_padding = 8
+        bar_height = 6
+
+        textwidth, textheight = self._draw.textsize(textlabel, font=font)
+        xtext = x+int((width-textwidth)/2)
+        ytext = y+int((height-textheight)/2)
+
+        self._draw.rectangle((x, y, x+width, y+height), outline=1, fill=0)
+        self._draw.text((xtext, ytext), textlabel, font=font, fill=255)
+
+    def image(self):
+        return self._image
+
+class BarModal:
+    """ Class that creates a modal with a label and a sliderbar"""
+
+    def __init__(self, image, font, textlabel, level):
+
+        self._image = image.copy()
+        (image_width, image_height) = self._image.size
+        self._draw = ImageDraw.Draw(self._image)
+
+        x = 4
+        y_fraction = 0.2
+        y = int(y_fraction*image_height)
+
+        width = image_width - 2*x 
+        height = image_height - 2*y
+
+        x_padding = 8
+        y_padding = 8
+        bar_height = 6
+
+        textwidth, textheight = self._draw.textsize(textlabel, font=font)
+        xtext = x+int((width-textwidth)/2)
+        ytext = y+4
+
+        self._draw.rectangle((x, y, x+width, y+height), outline=1, fill=0)
+        self._draw.rectangle((x+x_padding, y+height-y_padding-bar_height, \
+                       x+width-x_padding, y+height-y_padding), outline=1, fill=0)
+        self._draw.rectangle((x+x_padding, y+height-y_padding-bar_height, \
+                       x+int(width*level/100)-x_padding, y+height-y_padding), outline=1, fill=1)
+        self._draw.text((xtext, ytext), textlabel, font=font, fill=255)
+
+    def image(self):
+        return self._image
 
 class VolumioClient:
     """ Class for the websocket client to Volumio """
@@ -153,11 +306,15 @@ class VolumioClient:
         PORT=3000
 
         self._callback = False
+        self.prev_state = False
 
         def _on_pushState(*args):
             self.state = args[0]
+            if not self.prev_state:
+                self.prev_state = self.state
             if self._callback:
-                self._callback(self.state)
+                self._callback(self.prev_state, self.state)
+            self.prev_state = self.state
 
         self._client = SocketIO(HOSTNAME, PORT, LoggingNamespace)
         self._client.on('pushState', _on_pushState)
