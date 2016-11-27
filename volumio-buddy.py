@@ -32,10 +32,10 @@ def print_state(prev_state, state):
         if state["status"] == "play":
             display.text_modal(Display.MODAL_PLAY, 3)
             led.set(0, 30, 0)
-        if state["status"] == "pause":
+        elif state["status"] == "pause":
             display.text_modal(Display.MODAL_PAUSE, 3)
             led.set(30, 0, 0)
-        if state["status"] == "stop":
+        elif state["status"] == "stop":
             display.text_modal(Display.MODAL_STOP, 3)
             led.set(0, 0, 30)
 
@@ -46,8 +46,8 @@ ROT_ENC_1B = 21
 
 # Rotary encoder 2 pins (WiringPi numbering)
 PB2 = 7
-ROT_ENC_2A = 5
-ROT_ENC_2B = 4
+ROT_ENC_2A = 4
+ROT_ENC_2B = 5
 
 # LED pins (WiringPi numbering)
 LED_RED = 23
@@ -58,7 +58,7 @@ LED_BLUE = 22
 RESET_PIN = 26
 
 led = RGBLED(LED_RED, LED_GREEN, LED_BLUE)
-led.set(0, 0, 30)
+led.set(30, 30, 10)
 
 display = Display(RESET_PIN)
 display.image("volumio.ppm")

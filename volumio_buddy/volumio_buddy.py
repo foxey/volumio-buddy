@@ -140,11 +140,12 @@ class Display:
         self._display.begin()
         self.width = self._display.width
         self.height = self._display.height
-        self.clear()
 
 # Define image and draw objects for main screen and modal screen
         self._image = Image.new('1', (self.width, self.height))
         self._draw = ImageDraw.Draw(self._image)
+
+        self.clear()
 
         self._modal_image = Image.new('1', (self.width, self.height))
         self._modal_draw = ImageDraw.Draw(self._image)
@@ -161,14 +162,22 @@ class Display:
 # Start thread that will update the screen regulary
         thread.start_new_thread(self._update, ())
 
+# Lock thread during image update to prevent image distortion`
+    def display(self, image):
+        """ Update display with new image """
+        wiringpi.piLock(0)
+        self._display.image(image)
+        self._display.display()
+        wiringpi.piUnlock(0)
+
     def image(self, filename):
         """ Show a logo """
         try:
             self._image = Image.open(filename). \
                 resize((self.width, self.height), Image.ANTIALIAS).convert('1')
-            self._display.image(self._image)
-            self._display.display()
+            self.display(self._image)
         except IOError:
+            print "Cannot open file %s" % filename
             pass 
 
     def _update(self):
@@ -178,22 +187,22 @@ class Display:
             if time()-next_update_time > 0:
                 next_update_time = time()+1
                 if (time()-self._modal_timeout) > 0:
-                    self._display.image(self._image)
-                    self._display.display()
+                    self.display(self._image)
             sleep(.25)
 
     def clear(self):
         """ Clear the display """
-        self._display.clear()
-#        self._display.display()
+        self._draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
+        self.display(self._image)
 
     def volume_modal(self, level, delay):
+        """ Pop-up window with slider bar for volume """
         textlabel = Display.TXT_VOLUME + ' ' + str(int(level))
-        self._display.image(BarModal(self._image, self._font, textlabel, level).image())
-        self._display.display()
+        self.display(BarModal(self._image, self._font, textlabel, level).image())
         self._modal_timeout = time() + delay
 
     def text_modal(self, modal_type, delay):
+        """ Pop-up window with horizontally and vertically centered text label """
         if modal_type == Display.MODAL_PLAY:
             textlabel = Display.TXT_PLAY
         elif modal_type == Display.MODAL_PAUSE:
@@ -202,40 +211,10 @@ class Display:
             textlabel = Display.TXT_STOP
         else:
             textlabel = "Huh?"
-        self._display.image(Modal(self._image, self._font, textlabel).image())
-        self._display.display()
+        self.display(TextModal(self._image, self._font, textlabel).image())
         self._modal_timeout = time() + delay
 
-    def volume_modal_old(self, level, delay):
-
-        textlabel = Display.TXT_VOLUME + ' ' + str(int(level))
-        self._modal_image = self._image.copy()
-        self._modal_draw = ImageDraw.Draw(self._modal_image)
-
-        x = 4
-        y = int(.2*self.height)
-
-        textwidth, textheight = self._modal_draw.textsize(textlabel, font=self._font)
-
-        width = self.width -2*x 
-        height = self.height - 2*y
-        x_padding = 8
-        y_padding = 8
-        bar_height = 6
-        xtext = int((width-textwidth)/2)
-        ytext = y+4
-
-        self._modal_draw.rectangle((x, y, x+width, y+height), outline=1, fill=0)
-        self._modal_draw.rectangle((x+x_padding, y+height-y_padding-bar_height, \
-                       x+width-x_padding, y+height-y_padding), outline=1, fill=0)
-        self._modal_draw.rectangle((x+x_padding, y+height-y_padding-bar_height, \
-                       x+int(width*level/100)-x_padding, y+height-y_padding), outline=1, fill=1)
-        self._modal_draw.text((xtext, ytext), textlabel, font=self._font, fill=255)
-        self._display.image(self._modal_image)
-        self._display.display()
-        self._modal_timeout = time() + delay
-
-class Modal:
+class TextModal:
     """ Class that creates a modal with a textlabel """
 
     def __init__(self, image, font, textlabel):
