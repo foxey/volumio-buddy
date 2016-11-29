@@ -214,68 +214,63 @@ class Display:
         self.display(TextModal(self._image, self._font, textlabel).image())
         self._modal_timeout = time() + delay
 
-class TextModal:
+class Modal(object):
+    """ Base class that creates an empty modal """
+    def __init__(self, image):
+
+        self._image = image.copy()
+        (image_width, image_height) = self._image.size
+        self._draw = ImageDraw.Draw(self._image)
+
+        self._x = 4
+        y_fraction = 0.2
+        self._y = int(y_fraction*image_height)
+
+        self._width = image_width - 2*self._x 
+        self._height = image_height - 2*self._y
+
+        self._draw.rectangle((self._x, self._y,\
+                self._x+self._width, self._y+self._height), outline=1, fill=0)
+
+    def image(self):
+        return self._image
+
+class TextModal(Modal):
     """ Class that creates a modal with a textlabel """
 
     def __init__(self, image, font, textlabel):
 
-        self._image = image.copy()
-        (image_width, image_height) = self._image.size
-        self._draw = ImageDraw.Draw(self._image)
-
-        x = 4
-        y_fraction = 0.2
-        y = int(y_fraction*image_height)
-
-        width = image_width - 2*x 
-        height = image_height - 2*y
-        x_padding = 8
-        y_padding = 8
-        bar_height = 6
+        super(TextModal, self).__init__(image)
 
         textwidth, textheight = self._draw.textsize(textlabel, font=font)
-        xtext = x+int((width-textwidth)/2)
-        ytext = y+int((height-textheight)/2)
-
-        self._draw.rectangle((x, y, x+width, y+height), outline=1, fill=0)
+        xtext = self._x+int((self._width-textwidth)/2)
+        ytext = self._y+int((self._height-textheight)/2)
         self._draw.text((xtext, ytext), textlabel, font=font, fill=255)
 
-    def image(self):
-        return self._image
-
-class BarModal:
+class BarModal(Modal):
     """ Class that creates a modal with a label and a sliderbar"""
 
     def __init__(self, image, font, textlabel, level):
 
-        self._image = image.copy()
-        (image_width, image_height) = self._image.size
-        self._draw = ImageDraw.Draw(self._image)
-
-        x = 4
-        y_fraction = 0.2
-        y = int(y_fraction*image_height)
-
-        width = image_width - 2*x 
-        height = image_height - 2*y
+        super(BarModal, self).__init__(image)
 
         x_padding = 8
         y_padding = 8
         bar_height = 6
 
         textwidth, textheight = self._draw.textsize(textlabel, font=font)
-        xtext = x+int((width-textwidth)/2)
-        ytext = y+4
+        xtext = self._x+int((self._width-textwidth)/2)
+        ytext = self._y+4
 
-        self._draw.rectangle((x, y, x+width, y+height), outline=1, fill=0)
-        self._draw.rectangle((x+x_padding, y+height-y_padding-bar_height, \
-                       x+width-x_padding, y+height-y_padding), outline=1, fill=0)
-        self._draw.rectangle((x+x_padding, y+height-y_padding-bar_height, \
-                       x+int(width*level/100)-x_padding, y+height-y_padding), outline=1, fill=1)
+        self._draw.rectangle((self._x+x_padding, \
+                       self._y+self._height-y_padding-bar_height, \
+                       self._x+self._width-x_padding, \
+                       self._y+self._height-y_padding), outline=1, fill=0)
+        self._draw.rectangle((self._x+x_padding, \
+                       self._y+self._height-y_padding-bar_height, \
+                       self._x+int(self._width*level/100)-x_padding, \
+                       self._y+self._height-y_padding), outline=1, fill=1)
         self._draw.text((xtext, ytext), textlabel, font=font, fill=255)
-
-    def image(self):
-        return self._image
 
 class VolumioClient:
     """ Class for the websocket client to Volumio """
