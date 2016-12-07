@@ -5,7 +5,7 @@
 
 from volumio_buddy import VolumioClient
 
-def print_state(state):
+def print_state(prev_state, state):
     print state
 
 client=VolumioClient()

@@ -23,6 +23,12 @@ def toggle_play():
 def print_state(prev_state, state):
     global display
     global led
+    try:
+        seek =  int(int(state["seek"])/1000)
+    except TypeError:
+        seek = 0
+    display.update_main_screen(state["artist"] + " - " + state["album"] + " - " +
+            state["title"], int(state["duration"]), seek)
     last_volume = int(prev_state["volume"])
     print "status: " + str(state["status"])
     print "volume: " + str(int(state["volume"]))
@@ -30,14 +36,18 @@ def print_state(prev_state, state):
         display.volume_modal(int(state["volume"]), 3)
     elif state["status"] <> prev_state["status"]:
         if state["status"] == "play":
-            display.text_modal(Display.MODAL_PLAY, 3)
-            led.set(0, 30, 0)
+            display.status(Display.STATUS_PLAY, 3)
+            led.set(0, 10, 0)
         elif state["status"] == "pause":
-            display.text_modal(Display.MODAL_PAUSE, 3)
-            led.set(30, 0, 0)
+            display.status(Display.STATUS_PAUSE, 3)
+            led.set(10, 0, 0)
         elif state["status"] == "stop":
-            display.text_modal(Display.MODAL_STOP, 3)
-            led.set(0, 0, 30)
+            display.status(Display.STATUS_STOP, 3)
+            led.set(0, 0, 10)
+
+def show_menu():
+    global display
+    display.menu(3)
 
 # Rotary encoder 1 pins (WiringPi numbering)
 PB1 = 0
@@ -58,7 +68,7 @@ LED_BLUE = 22
 RESET_PIN = 26
 
 led = RGBLED(LED_RED, LED_GREEN, LED_BLUE)
-led.set(30, 30, 10)
+led.set(0, 0, 10)
 
 display = Display(RESET_PIN)
 display.image("volumio.ppm")
@@ -73,7 +83,7 @@ rotary_encoder = RotaryEncoder(ROT_ENC_1A, ROT_ENC_1B)
 rotary_encoder.set_callback(update_volume)
 
 push_button2 = PushButton(PB2)
-push_button2.set_callback(toggle_play)
+push_button2.set_callback(show_menu)
 
 rotary_encoder2 = RotaryEncoder(ROT_ENC_2A, ROT_ENC_2B)
 rotary_encoder2.set_callback(update_volume)
