@@ -177,12 +177,10 @@ class Display:
         self._draw = ImageDraw.Draw(self._image)
         self.clear()
 
+        self._logo_image = Image.new('1', (self.width, self.height))
+
         self._modal_image = Image.new('1', (self.width, self.height))
         self._modal_draw = ImageDraw.Draw(self._modal_image)
-
-        self._clear_image = Image.new('1', (self.width, self.height))
-        self._clear_draw = ImageDraw.Draw(self._clear_image)
-        self._clear_draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
 
 # Load font. If TTF file is not found, load default font
 # Make sure the .ttf font file is in the same directory as
@@ -207,8 +205,9 @@ class Display:
     def image(self, filename):
         """ Show a logo """
         try:
-            self._image = Image.open(filename). \
+            self._logo_image = Image.open(filename). \
                 resize((self.width, self.height), Image.ANTIALIAS).convert('1')
+            self._image.paste(self._logo_image)
             self.display(self._image)
         except IOError:
             print "Cannot open file %s" % filename
@@ -222,6 +221,7 @@ class Display:
                 next_update_time = time()+.25
                 if (time()-self._modal_timeout) > 0:
                     if self._status == Display.STATUS_STOP:
+                        self._image.paste(self._logo_image)
                         self.display(self._image)
                     else:
                         if self._status == Display.STATUS_PLAY:
@@ -229,21 +229,26 @@ class Display:
                         else:
                             position = self._seek
                         try:
-                            duration_label = str(int(self._duration/60)) + ":" + "%02d" % int(self._duration % 60)
+                            duration_label = str(int(self._duration/60)) + ":" + \
+                                                "%02d" % int(self._duration % 60)
                         except TypeError:
                             duration_label = "0:00"
                         try:
                             position_label = str(int(position/60)) + ":" + "%02d" % int(position % 60)
                         except TypeError:
                             position_label = "0:00"
+
+                        self._draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
                         scrollable1 = ScrollableText(self._label, self._font)
-                        scrollable2 = ScrollableText(position_label + " - " + duration_label, self._font)
+                        scrollable2 = ScrollableText(position_label + " - " + \
+                                            duration_label, self._font)
                         v_padding = 4
-                        v_offset = max(0,
-                                int((self.height - scrollable1.textheight - scrollable2.textheight - v_padding)/2))
-                        image = scrollable1.draw(self._clear_image, (10,0), self._scroll)
-                        image = scrollable2.draw(image, (0, scrollable1.textheight+v_padding), self._scroll)
-                        self.display(image)
+                        v_offset = max(0, int((self.height - scrollable1.textheight - \
+                                    scrollable2.textheight - v_padding)/2))
+                        scrollable1.draw(self._image, (0,v_offset), self._scroll)
+                        scrollable2.draw(self._image, (0, v_offset + \
+                                    scrollable1.textheight + v_padding), self._scroll)
+                        self.display(self._image)
                         self._scroll = (self._scroll + 10) % 1000000
             sleep(.1)
 
@@ -255,8 +260,8 @@ class Display:
     def volume_modal(self, level, delay):
         """ Pop-up window with slider bar for volume """
         textlabel = Display.TXT_VOLUME + ' ' + str(int(level))
-        self.display(BarModal(self._image, self._font, textlabel, level).image())
         self._modal_timeout = time() + delay
+        self.display(BarModal(self._image, self._font, textlabel, level).image())
 
     def status(self, status_type, delay):
         """ Pop-up window with horizontally and vertically centered text label """
@@ -271,10 +276,11 @@ class Display:
             textlabel = Display.TXT_STOP
         else:
             textlabel = "Huh?"
-        self.display(TextModal(self._image, self._font, textlabel).image())
         self._modal_timeout = time() + delay
+        self.display(TextModal(self._image, self._font, textlabel).image())
 
     def menu(self, delay):
+        """ Cycle through the menu modals """
         network = Network()
         if self._menu_item == Display.MENU_NETWORK:
             textlabel = ("ssid: " + network.wpa_supplicant["ssid"], "ip: " + str(network.my_ip()))
@@ -282,13 +288,14 @@ class Display:
             textlabel = ("ssid: " + network.hostapd["ssid"], "pw: " + network.hostapd["wpa_passphrase"])
         else:
             textlabel = ("Huh?", "I don't know you")
-        self.display(TwoLineTextModal(self._image, self._font, textlabel).image())
         self._modal_timeout = time() + delay
+        self.display(TwoLineTextModal(self._image, self._font, textlabel).image())
         self._menu_item = self._menu_item + 1
         if self._menu_item > Display.MENU_ITEMS:
             self._menu_item = 1
 
     def update_main_screen(self, label, duration, seek):
+        """ Update the text label, the seek time and the duration on the current song """
         self._label = label
         self._duration = duration
         self._seek = seek
@@ -390,13 +397,14 @@ class ScrollableText:
         """ Draw the label on (x,y) position of an image with starting at <offset> """
         width, height = image.size
         if self.textwidth > width:
-            i = offset % (5*int((self.textwidth-width)/5)+40)
+            i = offset % (self.textwidth+int(0.1*width))
         else:
             i = 0
             position = (int((width-self.textwidth)/2),position[1])
         temp=self._image.crop((i,0,width+i,self.textheight))
+        wiringpi.piLock(0)
         image.paste(temp, position)
-        return image
+        wiringpi.piUnlock(0)
 
 class VolumioClient:
     """ Class for the websocket client to Volumio """
@@ -444,7 +452,18 @@ class VolumioClient:
 
     def volume_down(self):
         self._client.emit('volume', '-')
-               
+
+    def previous(self):
+        print "previous"
+        self._client.emit('prev')
+
+    def next(self):
+        print "next"
+        self._client.emit('next')
+
+    def seek(self, seconds):
+        self._client.emit('seek', int(seconds))
+
     def wait(self):
         self._client.wait()
 

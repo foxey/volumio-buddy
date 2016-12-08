@@ -4,6 +4,7 @@
 # vim: set ts=4 sw=4 expandtab si:
 
 import sys
+from time import time
 sys.path.append("/home/volumio/volumio-buddy/volumio_buddy")
 from volumio_buddy import PushButton, RotaryEncoder, RGBLED, VolumioClient, Display
 
@@ -15,6 +16,19 @@ def update_volume(d):
         client.volume_up()
     else:
         print "unknown rotary encoder event"
+
+def previous_next(d):
+    global client
+    global rotary_encoder2_time 
+    if time() - rotary_encoder2_time > 1:
+        if d == RotaryEncoder.LEFT:
+            rotary_encoder2_time = time()
+            client.previous()
+        elif d == RotaryEncoder.RIGHT:
+            rotary_encoder2_time = time()
+            client.next()
+        else:
+            print "unknown rotary encoder event"
 
 def toggle_play():
     global client
@@ -31,6 +45,7 @@ def print_state(prev_state, state):
             state["title"], int(state["duration"]), seek)
     last_volume = int(prev_state["volume"])
     print "status: " + str(state["status"])
+    print "seek: " + str(state["seek"])
     print "volume: " + str(int(state["volume"]))
     if state["volume"] <> prev_state["volume"]:
         display.volume_modal(int(state["volume"]), 3)
@@ -86,6 +101,8 @@ push_button2 = PushButton(PB2)
 push_button2.set_callback(show_menu)
 
 rotary_encoder2 = RotaryEncoder(ROT_ENC_2A, ROT_ENC_2B)
-rotary_encoder2.set_callback(update_volume)
+rotary_encoder2.set_callback(previous_next)
+
+rotary_encoder2_time = 0
 
 client.wait()
