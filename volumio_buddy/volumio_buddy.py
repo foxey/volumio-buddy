@@ -4,6 +4,7 @@
 
 # Import time functions
 from time import time, sleep
+from os import path
 
 # Import thread library for modal timeout handling
 import thread
@@ -187,9 +188,13 @@ class Display:
 # the python script!
 # Some other nice fonts to try: http://www.dafont.com/bitmap.php
         try:
-            self._font = ImageFont.truetype('pixChicago.ttf', 10)
-        except:
+            self._font = ImageFont.truetype(path.dirname(path.realpath(__file__)) + '/pixChicago.ttf', 12)
+        except IOError:
             self._font = ImageFont.load_default()
+        try:
+            self._modal_font = ImageFont.truetype(path.dirname(path.realpath(__file__)) + '/LibertySans.ttf', 14)
+        except:
+            self._modal_font = ImageFont.load_default()
 
 # Start thread that will update the screen regulary
         thread.start_new_thread(self._update, ())
@@ -218,7 +223,7 @@ class Display:
         next_update_time = 0
         while True:
             if time()-next_update_time > 0:
-                next_update_time = time()+.25
+                next_update_time = time()+.15
                 if (time()-self._modal_timeout) > 0:
                     if self._status == Display.STATUS_STOP:
                         self._image.paste(self._logo_image)
@@ -289,7 +294,7 @@ class Display:
         else:
             textlabel = ("Huh?", "I don't know you")
         self._modal_timeout = time() + delay
-        self.display(TwoLineTextModal(self._image, self._font, textlabel).image())
+        self.display(TwoLineTextModal(self._image, self._modal_font, textlabel).image())
         self._menu_item = self._menu_item + 1
         if self._menu_item > Display.MENU_ITEMS:
             self._menu_item = 1
@@ -454,11 +459,9 @@ class VolumioClient:
         self._client.emit('volume', '-')
 
     def previous(self):
-        print "previous"
         self._client.emit('prev')
 
     def next(self):
-        print "next"
         self._client.emit('next')
 
     def seek(self, seconds):

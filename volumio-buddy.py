@@ -12,8 +12,10 @@ def update_volume(d):
     global client
     if d == RotaryEncoder.LEFT:
         client.volume_down()
+        print "volume down"
     elif d == RotaryEncoder.RIGHT:
         client.volume_up()
+        print "volume up"
     else:
         print "unknown rotary encoder event"
 
@@ -24,25 +26,51 @@ def previous_next(d):
         if d == RotaryEncoder.LEFT:
             rotary_encoder2_time = time()
             client.previous()
+            print "previous song"
         elif d == RotaryEncoder.RIGHT:
             rotary_encoder2_time = time()
             client.next()
+            print "next song"
         else:
             print "unknown rotary encoder event"
 
 def toggle_play():
     global client
     client.toggle_play()
+    print "play / pause"
 
 def print_state(prev_state, state):
     global display
     global led
     try:
+        duration =  int(state["duration"])
+    except TypeError:
+        duration = 0
+    except KeyError:
+        duration = 0
+    try:
         seek =  int(int(state["seek"])/1000)
+    except KeyError:
+        seek = 0
     except TypeError:
         seek = 0
-    display.update_main_screen(state["artist"] + " - " + state["album"] + " - " +
-            state["title"], int(state["duration"]), seek)
+    try:
+        artist=  state["artist"] + " - "
+    except KeyError:
+        artist = ""
+    except TypeError:
+        artist = ""
+    try:
+        album=  state["album"] + " - "
+    except KeyError:
+        album = ""
+    except TypeError:
+        album = ""
+    try:
+        title=  state["title"]
+    except KeyError:
+        title = ""
+    display.update_main_screen(artist + album + title, duration, seek)
     last_volume = int(prev_state["volume"])
     print "status: " + str(state["status"])
     print "seek: " + str(state["seek"])
@@ -62,6 +90,7 @@ def print_state(prev_state, state):
 
 def show_menu():
     global display
+# Display the menu modal for 3 sec
     display.menu(3)
 
 # Rotary encoder 1 pins (WiringPi numbering)
@@ -103,6 +132,10 @@ push_button2.set_callback(show_menu)
 rotary_encoder2 = RotaryEncoder(ROT_ENC_2A, ROT_ENC_2B)
 rotary_encoder2.set_callback(previous_next)
 
+# There must be a more elegant way, but this global variable is set to 
+#   the last time the encoder is triggered, to limit the number of 'next'
+#   'previous' commonands to 1/sec.
 rotary_encoder2_time = 0
 
+# Wait for event from either one of the buttons or the websocket connection
 client.wait()
