@@ -192,7 +192,7 @@ class Display:
         except IOError:
             self._font = ImageFont.load_default()
         try:
-            self._modal_font = ImageFont.truetype(path.dirname(path.realpath(__file__)) + '/LibertySans.ttf', 14)
+            self._modal_font = ImageFont.truetype(path.dirname(path.realpath(__file__)) + '/Vera.ttf', 12)
         except:
             self._modal_font = ImageFont.load_default()
 
@@ -353,7 +353,7 @@ class TwoLineTextModal(Modal):
 
         super(TwoLineTextModal, self).__init__(image)
 
-        y_padding = 4
+        y_padding = 2
         textwidth, textheight = self._draw.textsize(textlabel[0], font=font)
         ytext = self._y + int((self._height - 2*textheight - y_padding)/2)
         for i in (0, 1):
@@ -371,7 +371,7 @@ class BarModal(Modal):
 
         x_padding = 8
         y_padding = 8
-        bar_height = 6
+        bar_height = 4
 
         textwidth, textheight = self._draw.textsize(textlabel, font=font)
         xtext = self._x + max(0,int((self._width-textwidth)/2))
