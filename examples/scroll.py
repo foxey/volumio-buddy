@@ -29,9 +29,9 @@ try:
     while True:
 #        for i in range(0, 5*int((scrollable2.textwidth-width)/5)+8, 10):
         for i in range(0, int(1e6), 10):
-            image = scrollable1.draw(image, (0,0), i)
-            image = scrollable2.draw(image, (0,scrollable1.textheight+4), i)
-            image = scrollable3.draw(image, (0,scrollable1.textheight+scrollable2.textheight+8), i)
+            scrollable1.draw(image, (0,0), i)
+            scrollable2.draw(image, (0,scrollable1.textheight+4), i)
+            scrollable3.draw(image, (0,scrollable1.textheight+scrollable2.textheight+8), i)
             display._modal_timeout = time.time()+1
             display.display(image)
             time.sleep(.3)

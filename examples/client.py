@@ -5,9 +5,9 @@
 
 from volumio_buddy import VolumioClient
 
-def print_state(prev_state, state):
-    print state
+def print_state(client):
+    print client.state
 
 client=VolumioClient()
-client.set_callback(print_state)
+client.set_callback(print_state, client)
 client.wait()

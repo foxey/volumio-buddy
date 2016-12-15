@@ -5,8 +5,7 @@
 
 from volumio_buddy import RotaryEncoder, VolumioClient
 
-def update_volume(d):
-    global client
+def update_volume(d, client):
     if d == RotaryEncoder.LEFT:
         client.volume_down()
     elif d == RotaryEncoder.RIGHT:
@@ -14,16 +13,16 @@ def update_volume(d):
     else:
         print "unknown rotary encoder event"
 
-def print_volume(state):
-    print "volume: " + str(state["volume"])
+def print_volume(client):
+    print "volume: " + str(client.state["volume"])
 
 ROT_ENC_1A = 2
 ROT_ENC_1B = 21
 
 client=VolumioClient()
-client.set_callback(print_volume)
+client.set_callback(print_volume, client)
 
 rotary_encoder = RotaryEncoder(ROT_ENC_1A, ROT_ENC_1B)
-rotary_encoder.set_callback(update_volume)
+rotary_encoder.set_callback(update_volume, client)
 
 client.wait()

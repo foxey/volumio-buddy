@@ -41,21 +41,23 @@ class PushButton:
 
     def __init__(self, gpio_pin):
         volumio_buddy_setup()
-        self.callback_function = False
+        self._callback_function = False
+        self._callback_args = False
         self.last_push = 0
         self.minimum_delay = 0.5
         self.gpio_pin = gpio_pin
         wiringpi.pinMode(gpio_pin, 0)
 
-    def set_callback(self, callback_function):
+    def set_callback(self, callback_function, *callback_args):
         """ Register a function that is called when the knob is turned """
-        self.callback_function = callback_function
+        self._callback_function = callback_function
+        self._callback_args = callback_args
         wiringpi.wiringPiISR(self.gpio_pin, wiringpi.INT_EDGE_BOTH, self._callback)
 
     def _callback(self):
-        if time() - self.last_push > self.minimum_delay:
+        if time() - self.last_push > self.minimum_delay and self._callback_function:
             self.last_push = time()
-            self.callback_function()
+            self._callback_function(*self._callback_args)
 
 class RotaryEncoder:
     """ Class to register callback functions for left and right turns on
@@ -66,7 +68,8 @@ class RotaryEncoder:
 
     def __init__(self, gpio_pin_a, gpio_pin_b):
         volumio_buddy_setup()
-        self.callback_function = False
+        self._callback_function = False
+        self._callback_args = False
         self.in_critical_section = False
         self.prev_state = 0
         self.gpio_pin_a = gpio_pin_a
@@ -74,9 +77,10 @@ class RotaryEncoder:
         wiringpi.pinMode(gpio_pin_a, 0)
         wiringpi.pinMode(gpio_pin_b, 0)
 
-    def set_callback(self, callback_function):
+    def set_callback(self, callback_function, *callback_args):
         """ Register a function that is called when the knob is turned """
-        self.callback_function = callback_function
+        self._callback_function = callback_function
+        self._callback_args = callback_args
         wiringpi.wiringPiISR(self.gpio_pin_a, wiringpi.INT_EDGE_BOTH, self._decode_rotary)
         wiringpi.wiringPiISR(self.gpio_pin_b, wiringpi.INT_EDGE_BOTH, self._decode_rotary)
 
@@ -95,7 +99,7 @@ class RotaryEncoder:
 #        |         |         |         |
 #    ----+         +---------+         +---------+  1
 
-        if self.in_critical_section == True or not self.callback_function:
+        if self.in_critical_section == True or not self._callback_function:
             return
         self.in_critical_section = True
         MSB = wiringpi.digitalRead(self.gpio_pin_a)
@@ -103,9 +107,9 @@ class RotaryEncoder:
         new_state = (MSB << 1) | LSB
         sum = (self.prev_state << 2) | new_state
         if(sum == 0b1101 or sum == 0b0100 or sum == 0b0010 or sum == 0b1011):
-            self.callback_function(RotaryEncoder.LEFT)
+            self._callback_function(RotaryEncoder.LEFT, *self._callback_args)
         elif (sum == 0b1110 or sum == 0b0111 or sum == 0b0001 or sum == 0b1000):
-            self.callback_function(RotaryEncoder.RIGHT)
+            self._callback_function(RotaryEncoder.RIGHT, *self._callback_args)
         self.prev_state = new_state
         self.in_critical_section = False
 
@@ -418,15 +422,18 @@ class VolumioClient:
         HOSTNAME='localhost'
         PORT=3000
 
-        self._callback = False
-        self.prev_state = False
+        self._callback_function = False
+        self._callback_args = False
+        self.state = dict()
+        self.state["status"] = ""
+        self.prev_state = dict()
+        self.prev_state["status"] = ""
+        self.last_update_time = 0
 
         def _on_pushState(*args):
             self.state = args[0]
-            if not self.prev_state:
-                self.prev_state = self.state
-            if self._callback:
-                self._callback(self.prev_state, self.state)
+            if self._callback_function:
+                self._callback_function(*self._callback_args)
             self.prev_state = self.state
 
         self._client = SocketIO(HOSTNAME, PORT, LoggingNamespace)
@@ -434,8 +441,9 @@ class VolumioClient:
         self._client.emit('getState', _on_pushState)
         self._client.wait_for_callbacks(seconds=1)
 
-    def set_callback(self, callback):
-        self._callback = callback
+    def set_callback(self, callback_function, *callback_args):
+        self._callback_function = callback_function
+        self._callback_args = callback_args
 
     def play(self):
         self._client.emit('play')

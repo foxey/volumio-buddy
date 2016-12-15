@@ -5,7 +5,7 @@
 
 from sys import argv
 from random import randrange
-from volumio_buddy import Display
+from volumio_buddy import Display, TwoLineTextModal
 
 RESET_PIN = 26
 
@@ -21,9 +21,18 @@ import time
 try:
 # wait until ^C pressed
     while True:
-        display.volume_modal(randrange(100), 3)
+        textlabel=('text line 1', 'text line 2')
+        display._modal_timeout = time.time() + 3
+        display.display(TwoLineTextModal(display._image, display._modal_font, textlabel).image())
         time.sleep(10)
-        display.volume_modal(randrange(100), 3)
+        textlabel=('more text 3', 'more text 4')
+        display._modal_timeout = time.time() + 5
+        display.display(TwoLineTextModal(display._image, display._modal_font, textlabel).image())
+        time.sleep(3)
+        textlabel=('line 5', 'line 6')
+        display._modal_timeout = time.time() + 3
+        display.display(TwoLineTextModal(display._image, display._modal_font, textlabel).image())
+        time.sleep(5)
 finally:
 # clear screen before exiting
     display.clear()
