@@ -5,7 +5,9 @@
 
 import sys
 from time import time
+from os import path
 sys.path.append("/home/volumio/volumio-buddy/volumio_buddy")
+from volumio_buddy import __file__ as filename
 from volumio_buddy import PushButton, RotaryEncoder, RGBLED, VolumioClient, Display
 
 def update_volume(direction, client):
@@ -37,6 +39,7 @@ def toggle_play(client):
     print "play / pause"
 
 def print_state(client, display, led):
+# Tedious input sanitation
     try:
         duration =  int(client.state["duration"])
     except TypeError:
@@ -62,26 +65,52 @@ def print_state(client, display, led):
     except TypeError:
         album = ""
     try:
-        title=  client.state["title"]
+        title =  client.state["title"]
     except KeyError:
         title = ""
+    try:
+        status =  client.state["status"]
+    except KeyError:
+        status = ""
+    try:
+        prev_status =  client.prev_state["status"]
+    except KeyError:
+        status = ""
+    try:
+        volume =  int(client.state["volume"])
+    except TypeError:
+        volume = 0
+    except KeyError:
+        volume = 0
+    try:
+        prev_volume = int(client.prev_state["volume"])
+    except TypeError:
+        prev_volume = 0
+    except KeyError:
+        prev_volume = 0
+
+# Update the data for the main screen
     display.update_main_screen(artist + album + title, duration, seek)
-    last_volume = int(client.prev_state["volume"])
-    print "status: " + str(client.state["status"])
-    print "seek: " + str(client.state["seek"])
-    print "volume: " + str(int(client.state["volume"]))
-    if client.state["volume"] <> client.prev_state["volume"]:
-        display.volume_modal(int(client.state["volume"]), 3)
-    elif client.state["status"] <> client.prev_state["status"]:
-        if client.state["status"] == "play":
+
+# Show volume modal if the volume changed
+    if volume <> prev_volume:
+        display.volume_modal(volume, 3)
+# Show status modal & change LED colour if the status changed (between play, pause & stop)
+    elif status <> prev_status:
+        if status == "play":
             display.status(Display.STATUS_PLAY, 3)
             led.set(0, 10, 0)
-        elif client.state["status"] == "pause":
+        elif status == "pause":
             display.status(Display.STATUS_PAUSE, 3)
             led.set(10, 0, 0)
-        elif client.state["status"] == "stop":
+        elif status == "stop":
             display.status(Display.STATUS_STOP, 3)
             led.set(0, 0, 10)
+
+# Debug information
+    print "status: " + status
+    print "seek: " + str(seek)
+    print "volume: " + str(volume)
 
 def show_menu(display):
 # Display the menu modal for 3 sec
@@ -109,7 +138,7 @@ led = RGBLED(LED_RED, LED_GREEN, LED_BLUE)
 led.set(0, 0, 10)
 
 display = Display(RESET_PIN)
-display.image("volumio.ppm")
+display.image(path.dirname(path.realpath(filename)) + "/volumio.ppm")
 
 client=VolumioClient()
 client.set_callback(print_state, client, display, led)

@@ -35,7 +35,7 @@ setup(
     install_requires  = ['Adafruit_SSD1306>=1.6.1', 'wiringpi2>=2.32', 'Pillow>=2.6.1', 'socketIO-client-2>=0.7.2'],
 
     package_data={
-        'volumio_buddy': ['*.ttf'],
+        'volumio_buddy': ['*.ttf', '*.ppm'],
     },
 
 )
