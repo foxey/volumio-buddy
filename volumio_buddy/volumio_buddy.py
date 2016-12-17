@@ -156,6 +156,10 @@ class Display:
     TXT_PLAY = "Play"
     TXT_PAUSE = "Pause"
     TXT_STOP = "Stop"
+    TXT_UNKOWN = "Huh?"
+    TXT_SSID = "ssid"
+    TXT_IP = "ip"
+    TXT_PASSWORD = "pw"
 
     MENU_ITEMS = 2
     MENU_NETWORK = 1
@@ -233,32 +237,8 @@ class Display:
                         self._image.paste(self._logo_image)
                         self.display(self._image)
                     else:
-                        if self._status == Display.STATUS_PLAY:
-                            position = time() - self._main_screen_last_updated + self._seek
-                        else:
-                            position = self._seek
-                        try:
-                            duration_label = str(int(self._duration/60)) + ":" + \
-                                                "%02d" % int(self._duration % 60)
-                        except TypeError:
-                            duration_label = "0:00"
-                        try:
-                            position_label = str(int(position/60)) + ":" + "%02d" % int(position % 60)
-                        except TypeError:
-                            position_label = "0:00"
-
-                        self._draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
-                        scrollable1 = ScrollableText(self._label, self._font)
-                        scrollable2 = ScrollableText(position_label + " - " + \
-                                            duration_label, self._font)
-                        v_padding = 4
-                        v_offset = max(0, int((self.height - scrollable1.textheight - \
-                                    scrollable2.textheight - v_padding)/2))
-                        scrollable1.draw(self._image, (0,v_offset), self._scroll)
-                        scrollable2.draw(self._image, (0, v_offset + \
-                                    scrollable1.textheight + v_padding), self._scroll)
-                        self.display(self._image)
-                        self._scroll = (self._scroll + 10) % 1000000
+                        self.draw_main_screen()
+                    self.display(self._image)
             sleep(.1)
 
     def clear(self):
@@ -274,6 +254,7 @@ class Display:
 
     def status(self, status_type, delay):
         """ Pop-up window with horizontally and vertically centered text label """
+        self._modal_timeout = time() + delay
         if status_type == Display.STATUS_PLAY:
             self._status = Display.STATUS_PLAY
             textlabel = Display.TXT_PLAY
@@ -284,24 +265,93 @@ class Display:
             self._status = Display.STATUS_STOP
             textlabel = Display.TXT_STOP
         else:
-            textlabel = "Huh?"
-        self._modal_timeout = time() + delay
+            textlabel = Display.TXT_UNKNOWN
         self.display(TextModal(self._image, self._font, textlabel).image())
 
     def menu(self, delay):
         """ Cycle through the menu modals """
         network = Network()
-        if self._menu_item == Display.MENU_NETWORK:
-            textlabel = ("ssid: " + network.wpa_supplicant["ssid"], "ip: " + str(network.my_ip()))
-        elif self._menu_item == Display.MENU_WIFI:
-            textlabel = ("ssid: " + network.hostapd["ssid"], "pw: " + network.hostapd["wpa_passphrase"])
-        else:
-            textlabel = ("Huh?", "I don't know you")
         self._modal_timeout = time() + delay
+        if self._menu_item == Display.MENU_NETWORK:
+            textlabel = (Display.TXT_SSID + ": " + network.wpa_supplicant["ssid"], \
+                            Display.TXT_IP + ": " + str(network.my_ip()))
+        elif self._menu_item == Display.MENU_WIFI:
+            textlabel = (Display.TXT_SSID + ": " + network.hostapd["ssid"], \
+                            Display.TXT_PASSWORD + ": " + network.hostapd["wpa_passphrase"])
+        else:
+            textlabel = (Display.TXT_UNKNOWN, '')
         self.display(TwoLineTextModal(self._image, self._modal_font, textlabel).image())
         self._menu_item = self._menu_item + 1
         if self._menu_item > Display.MENU_ITEMS:
             self._menu_item = 1
+
+    def draw_main_screen(self):
+        v_offset = 2
+        v_padding = 4
+        bar_height = 4
+        separator_label = ' - '
+        if self._status == Display.STATUS_PLAY:
+            position = time() - self._main_screen_last_updated + self._seek
+        else:
+            position = 1.0 * self._seek
+        try:
+            duration_label = str(int(self._duration/60)) + ":" + \
+                                "%02d" % int(self._duration % 60)
+        except TypeError:
+            duration_label = "0:00"
+        try:
+            position_label = str(int(position/60)) + ":" + "%02d" % int(position % 60)
+        except TypeError:
+            position_label = "0:00"
+        try:
+            rel_position = min(100, max(0, position/self._duration))
+        except (NameError, TypeError, ZeroDivisionError):
+            rel_position = 0
+            bar_height = 0
+        self._draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
+        separator_label_width, separator_label_height = self._draw.textsize(separator_label, font=self._font)
+        position_label_width, position_label_height = self._draw.textsize(position_label, font=self._font)
+        scrollable = ScrollableText(self._label, self._font)
+        scrollable.draw(self._image, (0,v_offset), self._scroll)
+        self._draw.text(((self.width - separator_label_width)/2 - position_label_width, \
+                v_offset + scrollable.textheight + v_padding), \
+                position_label, font=self._font, fill=1)
+        self._draw.text(((self.width - separator_label_width)/2, \
+                v_offset + scrollable.textheight + v_padding), \
+                separator_label+duration_label, font=self._font, fill=1)
+        if bar_height > 0:
+            self._draw.rectangle((0, self.height - 1 - bar_height, \
+                           self.width - 1, self.height - 1), outline=1, fill=0)
+            self._draw.rectangle((0, self.height - 1 - bar_height, \
+                           int((self.width - 1)*rel_position), self.height - 1), outline=1, fill=1)
+        self._scroll = (self._scroll + 10) % 1000000
+
+    def display_main_screen_vintage(self):
+        if self._status == Display.STATUS_PLAY:
+            position = time() - self._main_screen_last_updated + self._seek
+        else:
+            position = self._seek
+        try:
+            duration_label = str(int(self._duration/60)) + ":" + \
+                                "%02d" % int(self._duration % 60)
+        except TypeError:
+            duration_label = "0:00"
+        try:
+            position_label = str(int(position/60)) + ":" + "%02d" % int(position % 60)
+        except TypeError:
+            position_label = "0:00"
+        self._draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
+        scrollable1 = ScrollableText(self._label, self._font)
+        scrollable2 = ScrollableText(position_label + " - " + \
+                            duration_label, self._font)
+        v_padding = 4
+        v_offset = max(0, int((self.height - scrollable1.textheight - \
+                    scrollable2.textheight - v_padding)/2))
+        scrollable1.draw(self._image, (0,v_offset), self._scroll)
+        scrollable2.draw(self._image, (0, v_offset + \
+                    scrollable1.textheight + v_padding), self._scroll)
+        self.display(self._image)
+        self._scroll = (self._scroll + 10) % 1000000
 
     def update_main_screen(self, label, duration, seek):
         """ Update the text label, the seek time and the duration on the current song """
@@ -381,14 +431,14 @@ class BarModal(Modal):
         xtext = self._x + max(0,int((self._width-textwidth)/2))
         ytext = self._y + 4
 
-        self._draw.rectangle((self._x+x_padding, \
-                       self._y+self._height-y_padding-bar_height, \
-                       self._x+self._width-x_padding, \
-                       self._y+self._height-y_padding), outline=1, fill=0)
-        self._draw.rectangle((self._x+x_padding, \
-                       self._y+self._height-y_padding-bar_height, \
-                       self._x+int(self._width*level/100)-x_padding, \
-                       self._y+self._height-y_padding), outline=1, fill=1)
+        self._draw.rectangle((self._x + x_padding, \
+                       self._y + self._height - y_padding - bar_height, \
+                       self._x + self._width - x_padding, \
+                       self._y + self._height - y_padding), outline=1, fill=0)
+        self._draw.rectangle((self._x + x_padding, \
+                       self._y + self._height - y_padding-bar_height, \
+                       self._x + x_padding + int((self._width - 2*x_padding)*level/100), \
+                       self._y + self._height - y_padding), outline=1, fill=1)
         self._draw.text((xtext, ytext), textlabel, font=font, fill=255)
 
 class ScrollableText:
