@@ -82,7 +82,7 @@ def print_state(client, display, led):
 
 # Show volume modal if the volume changed
     if volume <> prev_volume:
-        display.volume_modal(volume, 3)
+        display.volume(volume, 3)
 # Show status modal & change LED colour if the status changed (between play, pause & stop)
     elif status <> prev_status:
         if status == "play":

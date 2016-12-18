@@ -243,7 +243,7 @@ class Display:
         self._draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
         self.display(self._image)
 
-    def volume_modal(self, level, delay):
+    def volume(self, level, delay):
         """ Pop-up window with slider bar for volume """
         textlabel = Display.TXT_VOLUME + ' ' + str(int(level))
         self._modal_timeout = time() + delay
@@ -298,6 +298,9 @@ class Display:
             duration_label = "0:00"
         try:
             position_label = str(int(position/60)) + ":" + "%02d" % int(position % 60)
+# The position_minutes string is used to determine the width of the label to ensure the colon
+# is always at the same position
+            position_minutes = str(int(position/60)) + ":00"
         except TypeError:
             position_label = "0:00"
         try:
@@ -307,47 +310,25 @@ class Display:
             bar_height = 0
         self._draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
         separator_label_width, separator_label_height = self._draw.textsize(separator_label, font=self._font)
-        position_label_width, position_label_height = self._draw.textsize(position_label, font=self._font)
+        position_label_width, position_label_height = self._draw.textsize(position_minutes, font=self._font)
         scrollable = ScrollableText(self._label, self._font)
+# Draw the artist, album and song title (scrolling)
         scrollable.draw(self._image, (0,v_offset), self._scroll)
+# Draw the current position in the song
         self._draw.text(((self.width - separator_label_width)/2 - position_label_width, \
                 v_offset + scrollable.textheight + v_padding), \
                 position_label, font=self._font, fill=1)
+# Draw the total duration of the song + the separator. Ensure that the separator is centered horizontally
         self._draw.text(((self.width - separator_label_width)/2, \
                 v_offset + scrollable.textheight + v_padding), \
                 separator_label+duration_label, font=self._font, fill=1)
+# Draw the progress bar only when height > 0
         if bar_height > 0:
             self._draw.rectangle((0, self.height - 1 - bar_height, \
                            self.width - 1, self.height - 1), outline=1, fill=0)
             self._draw.rectangle((0, self.height - 1 - bar_height, \
                            int((self.width - 1)*rel_position), self.height - 1), outline=1, fill=1)
-        self._scroll = (self._scroll + 10) % 1000000
-
-    def display_main_screen_vintage(self):
-        if self._status == Display.STATUS_PLAY:
-            position = time() - self._main_screen_last_updated + self._seek
-        else:
-            position = self._seek
-        try:
-            duration_label = str(int(self._duration/60)) + ":" + \
-                                "%02d" % int(self._duration % 60)
-        except TypeError:
-            duration_label = "0:00"
-        try:
-            position_label = str(int(position/60)) + ":" + "%02d" % int(position % 60)
-        except TypeError:
-            position_label = "0:00"
-        self._draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
-        scrollable1 = ScrollableText(self._label, self._font)
-        scrollable2 = ScrollableText(position_label + " - " + \
-                            duration_label, self._font)
-        v_padding = 4
-        v_offset = max(0, int((self.height - scrollable1.textheight - \
-                    scrollable2.textheight - v_padding)/2))
-        scrollable1.draw(self._image, (0,v_offset), self._scroll)
-        scrollable2.draw(self._image, (0, v_offset + \
-                    scrollable1.textheight + v_padding), self._scroll)
-        self.display(self._image)
+# Increment the scroll 'cursor'
         self._scroll = (self._scroll + 10) % 1000000
 
     def update_main_screen(self, label, duration, seek):
