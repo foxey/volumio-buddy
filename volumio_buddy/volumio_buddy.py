@@ -174,6 +174,7 @@ class Display:
         self._duration = 0
         self._seek = 0
         self._main_screen_last_updated = 0
+        self._modal = False
         self._modal_timeout = 0
         self._menu_item = 1
         self._scroll = 0
@@ -187,9 +188,6 @@ class Display:
         self.clear()
 
         self._logo_image = Image.new('1', (self.width, self.height))
-
-        self._modal_image = Image.new('1', (self.width, self.height))
-        self._modal_draw = ImageDraw.Draw(self._modal_image)
 
 # Load font. If TTF file is not found, load default font
 # Make sure the .ttf font file is in the same directory as
@@ -232,13 +230,12 @@ class Display:
         while True:
             if time()-next_update_time > 0:
                 next_update_time = time()+.15
-                if (time()-self._modal_timeout) > 0:
-                    if self._status == Display.STATUS_STOP:
-                        self._image.paste(self._logo_image)
-                        self.display(self._image)
-                    else:
-                        self.draw_main_screen()
-                    self.display(self._image)
+                self.draw_main_screen()
+                if (time()-self._modal_timeout) < 0 and self._modal:
+                    self._image.paste(self._modal.image(), (self._modal.x, self._modal.y))
+                elif self._status == Display.STATUS_STOP:
+                    self._image.paste(self._logo_image)
+                self.display(self._image)
             sleep(.1)
 
     def clear(self):
@@ -250,7 +247,7 @@ class Display:
         """ Pop-up window with slider bar for volume """
         textlabel = Display.TXT_VOLUME + ' ' + str(int(level))
         self._modal_timeout = time() + delay
-        self.display(BarModal(self._image, self._font, textlabel, level).image())
+        self._modal = BarModal(self._image, self._font, textlabel, level)
 
     def status(self, status_type, delay):
         """ Pop-up window with horizontally and vertically centered text label """
@@ -266,7 +263,7 @@ class Display:
             textlabel = Display.TXT_STOP
         else:
             textlabel = Display.TXT_UNKNOWN
-        self.display(TextModal(self._image, self._font, textlabel).image())
+        self._modal = TextModal(self._image, self._font, textlabel)
 
     def menu(self, delay):
         """ Cycle through the menu modals """
@@ -280,7 +277,7 @@ class Display:
                             Display.TXT_PASSWORD + ": " + network.hostapd["wpa_passphrase"])
         else:
             textlabel = (Display.TXT_UNKNOWN, '')
-        self.display(TwoLineTextModal(self._image, self._modal_font, textlabel).image())
+        self._modal = TwoLineTextModal(self._image, self._modal_font, textlabel)
         self._menu_item = self._menu_item + 1
         if self._menu_item > Display.MENU_ITEMS:
             self._menu_item = 1
@@ -368,19 +365,17 @@ class Modal(object):
     """ Base class that creates an empty modal """
     def __init__(self, image):
 
-        self._image = image.copy()
-        (image_width, image_height) = self._image.size
+        self.x = 4
+        y_fraction = 0.2
+        (image_width, image_height) = image.size
+        self.y = int(y_fraction*image_height)
+        self.width = image_width - 2*self.x 
+        self.height = image_height - 2*self.y
+
+        self._image = Image.new('1', (self.width, self.height))
         self._draw = ImageDraw.Draw(self._image)
 
-        self._x = 4
-        y_fraction = 0.2
-        self._y = int(y_fraction*image_height)
-
-        self._width = image_width - 2*self._x 
-        self._height = image_height - 2*self._y
-
-        self._draw.rectangle((self._x, self._y,\
-                self._x+self._width, self._y+self._height), outline=1, fill=0)
+        self._draw.rectangle((0, 0, self.width - 1, self.height - 1), outline=1, fill=0)
 
     def image(self):
         return self._image
@@ -393,8 +388,8 @@ class TextModal(Modal):
         super(TextModal, self).__init__(image)
 
         textwidth, textheight = self._draw.textsize(textlabel, font=font)
-        xtext = self._x + max(0, int((self._width-textwidth)/2))
-        ytext = self._y + max(0, int((self._height-textheight)/2))
+        xtext = max(0, int((self.width-textwidth)/2))
+        ytext = max(0, int((self.height-textheight)/2))
         self._draw.text((xtext, ytext), textlabel, font=font, fill=255)
 
 class TwoLineTextModal(Modal):
@@ -409,10 +404,10 @@ class TwoLineTextModal(Modal):
 
         y_padding = 2
         textwidth, textheight = self._draw.textsize(textlabel[0], font=font)
-        ytext = self._y + int((self._height - 2*textheight - y_padding)/2)
+        ytext = int((self.height - 2*textheight - y_padding)/2)
         for i in (0, 1):
             textwidth, textheight = self._draw.textsize(textlabel[i], font=font)
-            xtext = self._x + int((self._width-textwidth)/2)
+            xtext = int((self.width-textwidth)/2)
             self._draw.text((xtext, ytext + i*(textheight + y_padding)), \
                     textlabel[i], font=font, fill=255)
 
@@ -428,17 +423,17 @@ class BarModal(Modal):
         bar_height = 4
 
         textwidth, textheight = self._draw.textsize(textlabel, font=font)
-        xtext = self._x + max(0,int((self._width-textwidth)/2))
-        ytext = self._y + 4
+        xtext = max(0,int((self.width-textwidth)/2))
+        ytext = 4
 
-        self._draw.rectangle((self._x + x_padding, \
-                       self._y + self._height - y_padding - bar_height, \
-                       self._x + self._width - x_padding, \
-                       self._y + self._height - y_padding), outline=1, fill=0)
-        self._draw.rectangle((self._x + x_padding, \
-                       self._y + self._height - y_padding-bar_height, \
-                       self._x + x_padding + int((self._width - 2*x_padding)*level/100), \
-                       self._y + self._height - y_padding), outline=1, fill=1)
+        self._draw.rectangle((x_padding, \
+                       self.height - y_padding - bar_height, \
+                       self.width - x_padding, \
+                       self.height - y_padding), outline=1, fill=0)
+        self._draw.rectangle((x_padding, \
+                       self.height - y_padding-bar_height, \
+                       x_padding + int((self.width - 2*x_padding)*level/100), \
+                       self.height - y_padding), outline=1, fill=1)
         self._draw.text((xtext, ytext), textlabel, font=font, fill=255)
 
 class ScrollableText:
