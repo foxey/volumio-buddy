@@ -269,8 +269,8 @@ class Display:
     def menu(self, delay):
         """ Cycle through the menu modals """
         network = Network()
-        if network.myip():
-            my_ip = network.myip()
+        if network.my_ip():
+            my_ip = network.my_ip()
         else:
             my_ip = Display.TXT_NONE
         self._modal_timeout = time() + delay
