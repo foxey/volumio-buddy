@@ -6,7 +6,7 @@
 import sys
 from time import time
 from os import path
-sys.path.append("/home/volumio/volumio-buddy/volumio_buddy")
+#sys.path.append("/home/volumio/volumio-buddy/volumio_buddy")
 from volumio_buddy import __file__ as filename
 from volumio_buddy import PushButton, RotaryEncoder, RGBLED, VolumioClient, Display
 

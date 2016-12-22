@@ -156,7 +156,8 @@ class Display:
     TXT_PLAY = "Play"
     TXT_PAUSE = "Pause"
     TXT_STOP = "Stop"
-    TXT_UNKOWN = "Huh?"
+    TXT_UNKNOWN = "Huh?"
+    TXT_NONE = "none"
     TXT_SSID = "ssid"
     TXT_IP = "ip"
     TXT_PASSWORD = "pw"
@@ -268,10 +269,14 @@ class Display:
     def menu(self, delay):
         """ Cycle through the menu modals """
         network = Network()
+        if network.myip():
+            my_ip = network.myip()
+        else:
+            my_ip = Display.TXT_NONE
         self._modal_timeout = time() + delay
         if self._menu_item == Display.MENU_NETWORK:
             textlabel = (Display.TXT_SSID + ": " + network.wpa_supplicant["ssid"], \
-                            Display.TXT_IP + ": " + str(network.my_ip()))
+                            Display.TXT_IP + ": " + str(my_ip))
         elif self._menu_item == Display.MENU_WIFI:
             textlabel = (Display.TXT_SSID + ": " + network.hostapd["ssid"], \
                             Display.TXT_PASSWORD + ": " + network.hostapd["wpa_passphrase"])
@@ -546,10 +551,13 @@ class Network(object):
             self.wpa_supplicant["psk"] = 'unknown'
 
     def my_ip(self):
-        return [l for l in \
-                ([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] \
-                if not ip.startswith("127.")][:1], \
-                    [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) \
-                for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) \
-                    if l][0][0]
+        try:
+            return [l for l in \
+                    ([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] \
+                    if not ip.startswith("127.")][:1], \
+                        [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) \
+                    for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) \
+                        if l][0][0]
+        except:
+            return None
 
