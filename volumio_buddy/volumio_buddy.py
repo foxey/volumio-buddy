@@ -231,11 +231,12 @@ class Display:
         while True:
             if time()-next_update_time > 0:
                 next_update_time = time()+.15
-                self.draw_main_screen()
+                if self._status == Display.STATUS_STOP:
+                    self._image.paste(self._logo_image)
+                else:
+                    self.draw_main_screen()
                 if (time()-self._modal_timeout) < 0 and self._modal:
                     self._image.paste(self._modal.image(), (self._modal.x, self._modal.y))
-                elif self._status == Display.STATUS_STOP:
-                    self._image.paste(self._logo_image)
                 self.display(self._image)
             sleep(.1)
 
@@ -297,8 +298,9 @@ class Display:
         else:
             position = 1.0 * self._seek
         try:
-            duration_label = str(int(self._duration/60)) + ":" + \
-                                "%02d" % int(self._duration % 60)
+            remaining = self._duration - position
+            duration_label = str(int(remaining/60)) + ":" + \
+                                "%02d" % int(remaining % 60)
         except TypeError:
             duration_label = "0:00"
         try:
