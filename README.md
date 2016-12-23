@@ -19,3 +19,12 @@ It is meant to run on the same host where the Volumio back-end runs and provides
 # fonts
 The [Pix Chicago](http://www.dafont.com/pix-chicago.font) font is provided by Etienne Desclides.
 The [Bitstream Vera Sans](http://ftp.gnome.org/pub/GNOME/sources/ttf-bitstream-vera/1.10/) is one of the [Gnome fonts](https://www.gnome.org/fonts/)
+
+# install
+First, ensure you have JPEG and Freetype support libraries installed:
+	apt-get install -y libjpeg9-dev libfreetype6-dev
+After that, clone the github repository:
+	git clone https://github.com/foxey/volumio-buddy
+	cd volumio-buddy
+Then install the library:
+	python ./setup.py install
