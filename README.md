@@ -16,11 +16,12 @@ It is meant to run on the same host where the Volumio back-end runs and provides
 - [Adafruit Python SSD1306](https://github.com/adafruit/Adafruit_Python_SSD1306)
 - [RPi.GPIO](https://sourceforge.net/p/raspberry-gpio-python/wiki/Home/) This package is a dependency of [Adafruit_Python_GPIO](https://github.com/adafruit/Adafruit_Python_GPIO) which is a dependency of Adafruit_Python_SSD1306, but is not listed in setup.py
 
-# fonts
+## fonts
 The [Pix Chicago](http://www.dafont.com/pix-chicago.font) font is provided by Etienne Desclides.
-The [Bitstream Vera Sans](http://ftp.gnome.org/pub/GNOME/sources/ttf-bitstream-vera/1.10/) is one of the [Gnome fonts](https://www.gnome.org/fonts/)
 
-# install
+The [Bitstream Vera Sans](http://ftp.gnome.org/pub/GNOME/sources/ttf-bitstream-vera/1.10/) is one of the [Gnome fonts](https://www.gnome.org/fonts/).
+
+## install
 First, ensure you have JPEG and Freetype support libraries installed:
 
 	apt-get install -y libjpeg9-dev libfreetype6-dev
@@ -28,7 +29,6 @@ First, ensure you have JPEG and Freetype support libraries installed:
 After that, clone the github repository:
 
 	git clone https://github.com/foxey/volumio-buddy
-
 	cd volumio-buddy
 
 Then install the library:
