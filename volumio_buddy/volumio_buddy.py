@@ -298,7 +298,7 @@ class Display:
         else:
             position = 1.0 * self._seek
         try:
-            remaining = self._duration - position
+            remaining = (self._duration - position) + .5
             duration_label = str(int(remaining/60)) + ":" + \
                                 "%02d" % int(remaining % 60)
         except TypeError:
