@@ -22,9 +22,15 @@ The [Bitstream Vera Sans](http://ftp.gnome.org/pub/GNOME/sources/ttf-bitstream-v
 
 # install
 First, ensure you have JPEG and Freetype support libraries installed:
+
 	apt-get install -y libjpeg9-dev libfreetype6-dev
+
 After that, clone the github repository:
+
 	git clone https://github.com/foxey/volumio-buddy
+
 	cd volumio-buddy
+
 Then install the library:
+
 	python ./setup.py install
