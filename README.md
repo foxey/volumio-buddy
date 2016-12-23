@@ -31,6 +31,10 @@ After that, clone the github repository:
 	git clone https://github.com/foxey/volumio-buddy
 	cd volumio-buddy
 
-Then install the library:
+Then install the library and the script:
 
 	python ./setup.py install
+
+Run the script:
+
+	volumio-buddy.py
