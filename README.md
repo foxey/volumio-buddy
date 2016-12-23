@@ -14,7 +14,8 @@ It is meant to run on the same host where the Volumio back-end runs and provides
 - [WiringPI](http://wiringpi.com/)
 - [PIL](http://effbot.org/zone/pil-index.htm)
 - [Adafruit Python SSD1306](https://github.com/adafruit/Adafruit_Python_SSD1306)
+- [RPi.GPIO](https://sourceforge.net/p/raspberry-gpio-python/wiki/Home/) This package is a dependency of [Adafruit_Python_GPIO](https://github.com/adafruit/Adafruit_Python_GPIO) which is a dependency of Adafruit_Python_SSD1306, but is not listed in setup.py
 
 # fonts
 The [Pix Chicago](http://www.dafont.com/pix-chicago.font) font is provided by Etienne Desclides.
-The [Bitstream Vera Sans]i(http://ftp.gnome.org/pub/GNOME/sources/ttf-bitstream-vera/1.10/) is one of the [Gnome fonts](https://www.gnome.org/fonts/)
+The [Bitstream Vera Sans](http://ftp.gnome.org/pub/GNOME/sources/ttf-bitstream-vera/1.10/) is one of the [Gnome fonts](https://www.gnome.org/fonts/)
