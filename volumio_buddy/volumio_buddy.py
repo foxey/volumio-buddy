@@ -298,11 +298,11 @@ class Display:
         else:
             position = 1.0 * self._seek
         try:
-            remaining = self._duration - position
+            remaining = max(self._duration - position, 0)
             duration_label = str(int(remaining/60)) + ":" + \
                                 "%02d" % int(remaining % 60)
         except TypeError:
-            duration_label = "0:00"
+            duration_label = "-:--"
         try:
             position_label = str(int(position/60)) + ":" + "%02d" % int(position % 60)
 # The position_minutes string is used to determine the width of the label to ensure the colon
