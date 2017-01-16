@@ -10,6 +10,10 @@ python:
   - "pypy"  # PyPy2 2.5.0
   - "pypy3" # Pypy3 2.4.0
   - "pypy-5.3.1"
+# installing dependencies for Pillow
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y zlibg1-dev libjpeg-dev python-dev
 # command to install dependencies
 install:
   - python setup.py install
