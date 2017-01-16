@@ -1,3 +1,5 @@
+![build status](https://travis-ci.org/foxey/volumio-buddy.svg?branch=master)
+
 # volumio-buddy
 
 Volumio-buddy is a python library and helper program for Volumio 2.
