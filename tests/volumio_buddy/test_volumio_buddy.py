@@ -3,9 +3,13 @@
 # vim: set ts=4 sw=4 expandtab si:
 
 import unittest
-import mock
+try:
+    import mock
+    from mock import patch
+except ImportError:
+    from unittest import mock
+    from unittest.mock import patch
 import wiringpi
-from mock import patch
 
 from volumio_buddy import volumio_buddy_setup, PushButton
 
