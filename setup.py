@@ -33,6 +33,8 @@ setup(
     scripts=['volumio-buddy.py'],
     dependency_links  = ['https://github.com/adafruit/Adafruit_Python_SSD1306/tarball/master#egg=Adafruit_SSD1306-1.6.1'],
     install_requires  = ['RPi.GPIO>=0.6.3', 'Adafruit_SSD1306>=1.6.1', 'wiringpi2>=2.32', 'Pillow>=2.6.1', 'socketIO-client-2>=0.7.2'],
+    tests_require = ['mock'],
+    test_suite = 'tests',
 
     package_data={
         'volumio_buddy': ['*.ttf', '*.ppm'],
