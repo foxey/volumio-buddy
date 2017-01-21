@@ -111,11 +111,9 @@ class TestVolumioBuddy(unittest.TestCase):
         mock_wiringpi_softPwmWrite.assert_has_calls(calls)
         self.assertEqual(led.get(), (1, 2, 3))
 
-    @patch('Adafruit_SSD1306.SSD1306_128_64')
+    @patch('Adafruit_SSD1306.SSD1306_128_64', width=128, height=64)
     def test7_Display(self, mock_Adafruit_SSD1306, mock_wiringpi_ISR, mock_wiringpi_pinMode, \
             mock_wiringpi_setup):
-        mock_Adafruit_SSD1306.width=128
-        mock_Adafruit_SSD1306.height=64
         RESET_PIN = 4
         display = Display(RESET_PIN)
         mock_Adafruit_SSD1306.assert_called_with(rst=RESET_PIN)
