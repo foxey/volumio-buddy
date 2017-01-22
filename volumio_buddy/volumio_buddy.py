@@ -57,7 +57,7 @@ class PushButton:
     def _callback(self):
         if time() - self.last_push > self.minimum_delay and self._callback_function:
             self.last_push = time()
-            self._callback_function(*self._callback_args)
+            return self._callback_function(*self._callback_args)
 
 class RotaryEncoder:
     """ Class to register callback functions for left and right turns on
@@ -106,12 +106,12 @@ class RotaryEncoder:
         LSB = wiringpi.digitalRead(self.gpio_pin_b)
         new_state = (MSB << 1) | LSB
         sum = (self.prev_state << 2) | new_state
-        if(sum == 0b1101 or sum == 0b0100 or sum == 0b0010 or sum == 0b1011):
-            self._callback_function(RotaryEncoder.LEFT, *self._callback_args)
-        elif (sum == 0b1110 or sum == 0b0111 or sum == 0b0001 or sum == 0b1000):
-            self._callback_function(RotaryEncoder.RIGHT, *self._callback_args)
         self.prev_state = new_state
         self.in_critical_section = False
+        if(sum == 0b1101 or sum == 0b0100 or sum == 0b0010 or sum == 0b1011):
+            return self._callback_function(RotaryEncoder.LEFT, *self._callback_args)
+        elif (sum == 0b1110 or sum == 0b0111 or sum == 0b0001 or sum == 0b1000):
+            return self._callback_function(RotaryEncoder.RIGHT, *self._callback_args)
 
 class RGBLED:
     """ Class to drive an RGB LED with soft PWM """
