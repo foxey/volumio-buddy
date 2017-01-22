@@ -14,7 +14,7 @@ deploy:
   user: foxey
   password:
     secure: 0tZGrRktJ5w2510XuEDmfEmlouD0lCjMBqb6w2VtmMAzdL6+zDv+wL1DI8EHt5utIJcanryz/HTgLlnxnons05JcTzKWajAcsEdrNmV5Sa9XR0nQmtEi596fl3U5mCR9dGuDhGf8VhDBp7jz0JD5kQa2ZILQQ3taFAo4G515LWz+Pgg9HmcYgG+kWkZRmQs0BasNvaa6OIK+OoK06vF4ImX1nqNay5o1dPtm+2nxIqslvCoG6I+sCQX+OKEs+zoSjbvOkYCl++gX+oSFjwef96TF4GEhemhYR7j3kXneb4ZYXi15tMK5NjwjjExEMs+6NCifQL2eI9x6itcJAop+HI+S4WYQvjAfvM3ReaU4WGQZej52ST0Kmq6va2Kwp7d0qTSfVw3WXVyrCfAG8UxWu9UFpD0YDuUzZzoAa7Z+V9mZr0FvsHbv9TjE0akEikuCtRNU2ZzazXsS0u7h6o8Vh+BLwI6Zrk9q3QmRsB6rojP8LpwL09l9/sNAYn3Jxf8MSMl6yrdfp7hmEIpY2ldpbsYBIws7aBLebpVVERNsOvmcNIH8/TnsCm0LVyh82CuV66pU60WS08xTaZ/X5N0FAP1R2sOt5S/B0OzCJXwz5K9cDm4GyJ6z2PGPRzr/3RRhEVHL2DZhFVjT90JyfF+UdadK4GUQe23p2IKaqMaxchM=
+  distributions: sdist bdist_wheel
+  repo: foxey/volumio-buddy
   on:
     tags: true
-    distributions: sdist bdist_wheel
-    repo: foxey/volumio-buddy
