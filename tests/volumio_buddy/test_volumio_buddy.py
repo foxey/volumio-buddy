@@ -111,12 +111,21 @@ class TestVolumioBuddy(unittest.TestCase):
         mock_wiringpi_softPwmWrite.assert_has_calls(calls)
         self.assertEqual(led.get(), (1, 2, 3))
 
-    @patch('Adafruit_SSD1306.SSD1306_128_64', width=128, height=64)
+    @patch('Adafruit_SSD1306.SSD1306_128_64')
     def test7_Display(self, mock_Adafruit_SSD1306, mock_wiringpi_ISR, mock_wiringpi_pinMode, \
             mock_wiringpi_setup):
         RESET_PIN = 4
+        width = 200
+        height = 100
+# ensure mocked Adafruit driver has width and height properties
+        instance = mock_Adafruit_SSD1306.return_value
+        instance.width = width
+        instance.height = height
+
         display = Display(RESET_PIN)
         mock_Adafruit_SSD1306.assert_called_with(rst=RESET_PIN)
+        assert display.width == width
+        assert display.height == height
         display.image(path.dirname(path.realpath(filename)) + "/volumio.ppm")
 
 if __name__ == '__main__':
