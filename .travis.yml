@@ -18,3 +18,4 @@ deploy:
   repo: foxey/volumio-buddy
   on:
     tags: true
+    condition: $TRAVIS_PYTHON_VERSION = "2.7"
