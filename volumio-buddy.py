@@ -41,11 +41,11 @@ def print_state(client, display, led):
 # Tedious input sanitation
     try:
         duration =  int(client.state["duration"])
-    except (TypeError, KeyError):
+    except (ValueError, TypeError, KeyError):
         duration = 0
     try:
         seek =  int(int(client.state["seek"])/1000)
-    except (TypeError, KeyError):
+    except (ValueError, TypeError, KeyError):
         seek = 0
     try:
         artist=  client.state["artist"] + " - "
@@ -69,11 +69,11 @@ def print_state(client, display, led):
         status = ""
     try:
         volume =  int(client.state["volume"])
-    except (TypeError, KeyError):
+    except (ValueError, TypeError, KeyError):
         volume = 0
     try:
         prev_volume = int(client.prev_state["volume"])
-    except (TypeError, KeyError):
+    except (ValueError, TypeError, KeyError):
         prev_volume = 0
 
 # Update the data for the main screen
