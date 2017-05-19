@@ -9,25 +9,25 @@ from os import path
 from volumio_buddy import __file__ as filename
 from volumio_buddy import PushButton, RotaryEncoder, RGBLED, VolumioClient, Display
 
-def update_volume(direction, client):
+def update_volume(rotary_encoder, client):
     if time() - client.last_update_time > .1:
         client.last_update_time = time()
-        if direction == RotaryEncoder.LEFT:
+        if rotary_encoder.direction == RotaryEncoder.LEFT:
             client.volume_down()
             print "volume down"
-        elif direction == RotaryEncoder.RIGHT:
+        elif rotary_encoder.direction == RotaryEncoder.RIGHT:
             client.volume_up()
             print "volume up"
         else:
             print "unknown rotary encoder event"
 
-def previous_next(direction, client):
+def previous_next(rotary_encoder, client):
     if time() - client.last_update_time > 1:
         client.last_update_time = time()
-        if direction == RotaryEncoder.LEFT:
+        if rotary_encoder.direction == RotaryEncoder.LEFT:
             client.previous()
             print "previous song"
-        elif direction == RotaryEncoder.RIGHT:
+        elif rotary_encoder.direction == RotaryEncoder.RIGHT:
             client.next()
             print "next song"
         else:
@@ -134,13 +134,13 @@ push_button = PushButton(PB1)
 push_button.set_callback(toggle_play, client)
 
 rotary_encoder = RotaryEncoder(ROT_ENC_1A, ROT_ENC_1B)
-rotary_encoder.set_callback(update_volume, client)
+rotary_encoder.set_callback(update_volume, rotary_encoder, client)
 
 push_button2 = PushButton(PB2)
 push_button2.set_callback(show_menu, display)
 
 rotary_encoder2 = RotaryEncoder(ROT_ENC_2A, ROT_ENC_2B)
-rotary_encoder2.set_callback(previous_next, client)
+rotary_encoder2.set_callback(previous_next, rotary_encoder2, client)
 
 # Wait for event from either one of the buttons or the websocket connection
 client.wait()

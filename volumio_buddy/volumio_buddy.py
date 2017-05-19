@@ -63,6 +63,7 @@ class RotaryEncoder:
     """ Class to register callback functions for left and right turns on
         a rotary encoder """
 
+    UNKNOWN = 0
     LEFT = 1
     RIGHT = 2
 
@@ -71,6 +72,8 @@ class RotaryEncoder:
         self._callback_function = False
         self._callback_args = False
         self.in_critical_section = False
+        self.direction = RotaryEncoder.UNKNOWN
+        self.prev_direction = RotaryEncoder.UNKNOWN
         self.prev_state = 0
         self.gpio_pin_a = gpio_pin_a
         self.gpio_pin_b = gpio_pin_b
@@ -108,10 +111,14 @@ class RotaryEncoder:
         sum = (self.prev_state << 2) | new_state
         self.prev_state = new_state
         self.in_critical_section = False
+        self.prev_direction = self.direction
         if(sum == 0b1101 or sum == 0b0100 or sum == 0b0010 or sum == 0b1011):
-            return self._callback_function(RotaryEncoder.LEFT, *self._callback_args)
+            self.direction = RotaryEncoder.LEFT
         elif (sum == 0b1110 or sum == 0b0111 or sum == 0b0001 or sum == 0b1000):
-            return self._callback_function(RotaryEncoder.RIGHT, *self._callback_args)
+            self.direction = RotaryEncoder.RIGHT
+        else:
+            self.direction = RotaryEncoder.UNKNOWN
+        return self._callback_function(*self._callback_args)
 
 class RGBLED:
     """ Class to drive an RGB LED with soft PWM """

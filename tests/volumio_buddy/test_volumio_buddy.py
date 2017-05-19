@@ -71,19 +71,19 @@ class TestVolumioBuddy(unittest.TestCase):
         gpio_pin_a = 1
         gpio_pin_b = 1
         r = RotaryEncoder(gpio_pin_a, gpio_pin_b)
-        r.set_callback(callback_function, d)
+        r.set_callback(callback_function, r, d)
         mock_wiringpi_ISR.assert_called_with(gpio_pin_b, wiringpi.INT_EDGE_BOTH, r._decode_rotary)
 
     @patch('wiringpi.digitalRead', side_effect=[0, 1, 1, 1, 0 , 1, 0, 0])
     def test5_RotaryEncoder_set_callback(self, mock_wiringpi_digital_read, mock_wiringpi_ISR, \
             mock_wiringpi_pinMode, mock_wiringpi_setup):
         d = dict()
-        def callback_function(direction, arg):
-            return direction, d[0]
+        def callback_function(r, arg):
+            return r.direction, d[0]
         gpio_pin_a = 1
         gpio_pin_b = 1
         r = RotaryEncoder(gpio_pin_a, gpio_pin_b)
-        r.set_callback(callback_function, d)
+        r.set_callback(callback_function, r, d)
         d[0] = 1
         self.assertEqual(r._decode_rotary(), (RotaryEncoder.RIGHT, 1))
         self.assertEqual(r._decode_rotary(), (RotaryEncoder.RIGHT, 1))
