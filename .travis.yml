@@ -16,6 +16,7 @@ deploy:
     secure: "Ks653sXOLmuC/F46s/xYlHZUD2dCMkeKhijBBSFOx/zwhvmGEPVWr6fku5OfzzNONo7wwVPtoO9i6Z3LPv1OV99JP2/j9GHA/86v5puigohZuji9AuUJtk3douoMnbsn+T9QYONzNfHoIBTBU5+c71RpDA/FlfgXUu4gIXbQxhxGSQZ0CWylY18CIOpXbjqbFP7i+ueS5Lj48iwQcKQU6ULqxVlgdnYIl6HDcz3WuS0GdWah4YOwluHI7c/rY4q4ARvbUg9sGmLfiAPQ9xUV/YWOzSaXfdiY5bayhXHIRBX8V/Ftgr1W60cGOhOq+/PF9sr6j+WpuBH/adjUX6VconpBTE4cAd6vT6BUuC/R4apWr+Tnt39LNvr7mCT1w2ERbJI5C/RhIq2WQedUJXxWIyuVaQrLH3tEq75byFC489HbBMD9JqKdGOP6O7frRbR85W7UEcpL9nPmMp0R3LxpzGstAWTZ+GpovMWMSrlFGxF1EgcGh60OBagfiGq/uDIRM7JXPpET+SlGmmNgAINZ2KOEeYxxQ1qdGLfwoYJEIMaVszD8CIa+Ddp42joWptFXRpogZQe7CjT8z0kbA8lhrUtBmnewErEvl8di4oWxg7+5bRJGEWlWv7YouQFZxJ8mSRVYaVKRLWBxJ07sHwhwWgEkEo1Ejtz7RAyqH0sGIv4="
   repo: foxey/volumio-buddy
   distributions: sdist
+  server: https://upload.pypi.org/legacy/
   on:
     tags: true
     condition: $TRAVIS_PYTHON_VERSION = "2.7"

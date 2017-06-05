@@ -22,7 +22,7 @@ classifiers = ['Development Status :: 4 - Beta',
 from setuptools import setup, find_packages
 setup(
     name="volumio-buddy",
-    version="0.2.6",
+    version="0.2.7",
     author="Michiel Fokke",
     author_email="michiel@fokke.org",
     description="A helper program for Volumio 2 hardware add-on's",
