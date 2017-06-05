@@ -126,6 +126,7 @@ led.set(0, 0, 10)
 
 display = Display(RESET_PIN)
 display.image(path.dirname(path.realpath(filename)) + "/volumio.ppm")
+display.start_updates()
 
 client=VolumioClient()
 client.set_callback(print_state, client, display, led)

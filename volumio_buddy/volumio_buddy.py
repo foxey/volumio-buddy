@@ -189,6 +189,7 @@ class Display:
         self._display.begin()
         self.width = self._display.width
         self.height = self._display.height
+        self.update_interval = 0.1
 
 # Define image and draw objects for main screen and modal screen
         self._image = Image.new('1', (self.width, self.height))
@@ -209,9 +210,6 @@ class Display:
             self._modal_font = ImageFont.truetype(path.dirname(path.realpath(__file__)) + '/Vera.ttf', 12)
         except:
             self._modal_font = ImageFont.load_default()
-
-# Start thread that will update the screen regulary
-        thread.start_new_thread(self._update, ())
 
 # Lock thread during image update to prevent image distortion`
     def display(self, image):
@@ -235,9 +233,9 @@ class Display:
     def _update(self):
         """ Update the display 4x/sec in separate thread """
         next_update_time = 0
-        while True:
+        while self.update_interval > 0:
             if time()-next_update_time > 0:
-                next_update_time = time()+.15
+                next_update_time = time()+1.5*self.update_interval
                 if self._status == Display.STATUS_STOP:
                     self._image.paste(self._logo_image)
                 else:
@@ -245,7 +243,12 @@ class Display:
                 if (time()-self._modal_timeout) < 0 and self._modal:
                     self._image.paste(self._modal.image(), (self._modal.x, self._modal.y))
                 self.display(self._image)
-            sleep(.1)
+            sleep(self.update_interval)
+
+# Start thread that will update the screen regulary
+    def start_updates(self, interval = 0.1):
+        self.update_interval = interval
+        thread.start_new_thread(self._update, ())
 
     def clear(self):
         """ Clear the display """
