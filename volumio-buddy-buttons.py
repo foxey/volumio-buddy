@@ -35,8 +35,17 @@ def previous_next(rotary_encoder, client):
             print "unknown rotary encoder event"
 
 def toggle_play(client):
+    try:
+        if client.state["status"] == "play":
+            client.state["status"] = "pause"
+            print "pause"
+        else:
+            client.state["status"] = "play"
+            print "play"
+    except NameError, KeyError:
+        client.state["status"] = "pause"
+        print "pause (exception)"
     client.toggle_play()
-    print "play / pause"
 
 # Rotary encoder 1 pins (WiringPi numbering)
 PB1 = 0
