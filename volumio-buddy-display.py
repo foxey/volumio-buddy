@@ -7,7 +7,7 @@ import sys
 from time import time
 from os import path
 from volumio_buddy import __file__ as filename
-from volumio_buddy import PushButton, RotaryEncoder, RGBLED, VolumioClient, Display
+from volumio_buddy import RGBLED, VolumioClient, Display
 
 def update_volume(rotary_encoder, client):
     if time() - client.last_update_time > .1:
@@ -128,23 +128,11 @@ display = Display(RESET_PIN)
 display.image(path.dirname(path.realpath(filename)) + "/volumio.ppm")
 display.start_updates()
 
-push_button = PushButton(PB1)
-push_button2 = PushButton(PB2)
-rotary_encoder = RotaryEncoder(ROT_ENC_1A, ROT_ENC_1B)
-rotary_encoder2 = RotaryEncoder(ROT_ENC_2A, ROT_ENC_2B)
-
 while True:
 # Ensure client restarts after network disconnection
     print "start websocket connection"
     client=VolumioClient()
     client.set_callback(print_state, client, display, led)
-
-    push_button.set_callback(toggle_play, client)
-    push_button2.set_callback(show_menu, display)
-
-    rotary_encoder.set_callback(update_volume, rotary_encoder, client)
-    rotary_encoder2.set_callback(previous_next, rotary_encoder2, client)
-
 # Wait for event from either one of the buttons or the websocket connection
     client.wait()
     print "lost websocket connection"
