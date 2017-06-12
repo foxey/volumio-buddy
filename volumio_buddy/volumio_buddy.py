@@ -46,7 +46,8 @@ class PushButton:
         self.last_push = 0
         self.minimum_delay = 0.5
         self.gpio_pin = gpio_pin
-        wiringpi.pinMode(gpio_pin, 0)
+        wiringpi.pinMode(gpio_pin, wiringpi.GPIO.INPUT)
+        wiringpi.pullUpDnControl(gpio_pin, wiringpi.GPIO.PUD_OFF)
 
     def set_callback(self, callback_function, *callback_args):
         """ Register a function that is called when the knob is turned """
@@ -77,8 +78,10 @@ class RotaryEncoder:
         self.prev_state = 0
         self.gpio_pin_a = gpio_pin_a
         self.gpio_pin_b = gpio_pin_b
-        wiringpi.pinMode(gpio_pin_a, 0)
-        wiringpi.pinMode(gpio_pin_b, 0)
+        wiringpi.pinMode(gpio_pin_a, wiringpi.GPIO.INPUT)
+        wiringpi.pinMode(gpio_pin_b, wiringpi.GPIO.INPUT)
+        wiringpi.pullUpDnControl(gpio_pin_a, wiringpi.GPIO.PUD_OFF)
+        wiringpi.pullUpDnControl(gpio_pin_b, wiringpi.GPIO.PUD_OFF)
 
     def set_callback(self, callback_function, *callback_args):
         """ Register a function that is called when the knob is turned """
@@ -518,8 +521,8 @@ class VolumioClient:
     def seek(self, seconds):
         self._client.emit('seek', int(seconds))
 
-    def wait(self):
-        self._client.wait()
+    def wait(self, **kwargs):
+        self._client.wait(**kwargs)
 
 class Network(object):
     def __init__(self):

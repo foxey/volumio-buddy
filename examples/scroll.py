@@ -4,7 +4,7 @@
 # vim: set ts=4 sw=4 expandtab si:
 
 import time
-from volumio_buddy import RotaryEncoder, Display, ScrollableText
+from volumio_buddy import Display, ScrollableText
 from PIL import Image
 from PIL import ImageFont
 RESET_PIN = 26
