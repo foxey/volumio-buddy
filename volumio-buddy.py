@@ -4,38 +4,31 @@
 # vim: set ts=4 sw=4 expandtab si:
 
 import sys
-from time import time
-from os import path
+import os
+from time import time, sleep
 from volumio_buddy import __file__ as filename
-from volumio_buddy import PushButton, RotaryEncoder, RGBLED, VolumioClient, Display
+from volumio_buddy import PushButton, RotaryEncoder, RGBLED, VolumioClient, Display, PipeWriter
 
-def update_volume(rotary_encoder, client):
-    if time() - client.last_update_time > .1:
-        client.last_update_time = time()
-        if rotary_encoder.direction == RotaryEncoder.LEFT:
-            client.volume_down()
-            print "volume down"
-        elif rotary_encoder.direction == RotaryEncoder.RIGHT:
-            client.volume_up()
-            print "volume up"
-        else:
-            print "unknown rotary encoder event"
+from wiringpi import delay
 
-def previous_next(rotary_encoder, client):
-    if time() - client.last_update_time > 1:
-        client.last_update_time = time()
-        if rotary_encoder.direction == RotaryEncoder.LEFT:
-            client.previous()
-            print "previous song"
-        elif rotary_encoder.direction == RotaryEncoder.RIGHT:
-            client.next()
-            print "next song"
-        else:
-            print "unknown rotary encoder event"
+def update_volume(rotary_encoder, pipe):
+    if rotary_encoder.direction == RotaryEncoder.LEFT:
+        pipe.write("volume_down")
+    elif rotary_encoder.direction == RotaryEncoder.RIGHT:
+        pipe.write("volume_up")
+    else:
+        print "unknown rotary encoder event"
 
-def toggle_play(client):
-    client.toggle_play()
-    print "play / pause"
+def previous_next(rotary_encoder, pipe):
+    if rotary_encoder.direction == RotaryEncoder.LEFT:
+        pipe.write("previous_song")
+    elif rotary_encoder.direction == RotaryEncoder.RIGHT:
+        pipe.write("next_song")
+    else:
+        print "unknown rotary encoder event"
+
+def toggle_play(pipe):
+    pipe.write("toggle_play")
 
 def print_state(client, display, led):
 # Tedious input sanitation
@@ -99,9 +92,8 @@ def print_state(client, display, led):
     print "seek: " + str(seek)
     print "volume: " + str(volume)
 
-def show_menu(display):
-# Display the menu modal for 3 sec
-    display.menu(3)
+def show_menu(pipe):
+    pipe.write('show_menu')
 
 # Rotary encoder 1 pins (WiringPi numbering)
 PB1 = 0
@@ -121,30 +113,57 @@ LED_BLUE = 22
 # SSD3106 reset pin (not used)
 RESET_PIN = 26
 
-led = RGBLED(LED_RED, LED_GREEN, LED_BLUE)
-led.set(0, 0, 10)
+pipe = PipeWriter()
 
-display = Display(RESET_PIN)
-display.image(path.dirname(path.realpath(filename)) + "/volumio.ppm")
-display.start_updates()
+if os.fork() != 0:
+    pipe.close(PipeWriter.OUT)
+    led = RGBLED(LED_RED, LED_GREEN, LED_BLUE)
+    led.set(0, 0, 10)
 
-push_button = PushButton(PB1)
-push_button2 = PushButton(PB2)
-rotary_encoder = RotaryEncoder(ROT_ENC_1A, ROT_ENC_1B)
-rotary_encoder2 = RotaryEncoder(ROT_ENC_2A, ROT_ENC_2B)
+    display = Display(RESET_PIN)
+    display.image(os.path.dirname(os.path.realpath(filename)) + "/volumio.ppm")
+    display.start_updates()
 
-while True:
+    while True:
 # Ensure client restarts after network disconnection
-    print "start websocket connection"
-    client=VolumioClient()
-    client.set_callback(print_state, client, display, led)
+        print "start websocket connection"
+        client=VolumioClient()
+        client.set_callback(print_state, client, display, led)
 
-    push_button.set_callback(toggle_play, client)
-    push_button2.set_callback(show_menu, display)
+# Wait for events from the websocket connection in separate thread
+        client.wait()
+        while True:
+            command = '%s' % pipe.read()
+            print 'recieved command: %s' % command
+            if command == 'volume_up':
+                client.volume_up()
+            elif command == 'volume_down':
+                client.volume_down()
+            elif command == 'next_song':
+                client.next()
+            elif command == 'previous_song':
+                client.previous()
+            elif command == 'toggle_play':
+                client.toggle_play()
+            elif command == 'show_menu':
+# Display the menu modal for 3 sec
+                display.menu(3)
+            else:
+                print "unknown command"
+            print "sleeping"
 
-    rotary_encoder.set_callback(update_volume, rotary_encoder, client)
-    rotary_encoder2.set_callback(previous_next, rotary_encoder2, client)
+else:
+    pipe.close(PipeWriter.IN)
+    push_button = PushButton(PB1)
+    push_button2 = PushButton(PB2)
+    rotary_encoder = RotaryEncoder(ROT_ENC_1A, ROT_ENC_1B, minimum_delay=0.1)
+    rotary_encoder2 = RotaryEncoder(ROT_ENC_2A, ROT_ENC_2B)
 
-# Wait for event from either one of the buttons or the websocket connection
-    client.wait()
-    print "lost websocket connection"
+    push_button.set_callback(toggle_play, pipe)
+    push_button2.set_callback(show_menu, pipe)
+
+    rotary_encoder.set_callback(update_volume, rotary_encoder, pipe)
+    rotary_encoder2.set_callback(previous_next, rotary_encoder2, pipe)
+
+    while True:
+        delay(2000)

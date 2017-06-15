@@ -2,12 +2,12 @@
 # Author: Michiel Fokke <michiel@fokke.org>
 # vim: set ts=4 sw=4 expandtab si:
 
+import os
 # Import time functions
 from time import time, sleep
-from os import path
 
 # Import thread library for modal timeout handling
-import thread
+from threading import Thread
 
 
 # Import network library
@@ -39,12 +39,12 @@ def volumio_buddy_setup():
 class PushButton:
     """ Class to register a callback function for a pushbutton """
 
-    def __init__(self, gpio_pin):
+    def __init__(self, gpio_pin, minimum_delay = 0.5):
         volumio_buddy_setup()
         self._callback_function = False
         self._callback_args = False
         self.last_push = 0
-        self.minimum_delay = 0.5
+        self.minimum_delay = minimum_delay
         self.gpio_pin = gpio_pin
         wiringpi.pinMode(gpio_pin, wiringpi.GPIO.INPUT)
         wiringpi.pullUpDnControl(gpio_pin, wiringpi.GPIO.PUD_OFF)
@@ -68,7 +68,7 @@ class RotaryEncoder:
     LEFT = 1
     RIGHT = 2
 
-    def __init__(self, gpio_pin_a, gpio_pin_b):
+    def __init__(self, gpio_pin_a, gpio_pin_b, minimum_delay = 0.5):
         volumio_buddy_setup()
         self._callback_function = False
         self._callback_args = False
@@ -76,6 +76,8 @@ class RotaryEncoder:
         self.direction = RotaryEncoder.UNKNOWN
         self.prev_direction = RotaryEncoder.UNKNOWN
         self.prev_state = 0
+        self.last_push = 0
+        self.minimum_delay = minimum_delay
         self.gpio_pin_a = gpio_pin_a
         self.gpio_pin_b = gpio_pin_b
         wiringpi.pinMode(gpio_pin_a, wiringpi.GPIO.INPUT)
@@ -121,7 +123,9 @@ class RotaryEncoder:
             self.direction = RotaryEncoder.RIGHT
         else:
             self.direction = RotaryEncoder.UNKNOWN
-        return self._callback_function(*self._callback_args)
+        if time() - self.last_push > self.minimum_delay and self._callback_function:
+            self.last_push = time()
+            return self._callback_function(*self._callback_args)
 
 class RGBLED:
     """ Class to drive an RGB LED with soft PWM """
@@ -206,11 +210,11 @@ class Display:
 # the python script!
 # Some other nice fonts to try: http://www.dafont.com/bitmap.php
         try:
-            self._font = ImageFont.truetype(path.dirname(path.realpath(__file__)) + '/pixChicago.ttf', 12)
+            self._font = ImageFont.truetype(os.path.dirname(os.path.realpath(__file__)) + '/pixChicago.ttf', 12)
         except IOError:
             self._font = ImageFont.load_default()
         try:
-            self._modal_font = ImageFont.truetype(path.dirname(path.realpath(__file__)) + '/Vera.ttf', 12)
+            self._modal_font = ImageFont.truetype(os.path.dirname(os.path.realpath(__file__)) + '/Vera.ttf', 12)
         except:
             self._modal_font = ImageFont.load_default()
 
@@ -251,7 +255,9 @@ class Display:
 # Start thread that will update the screen regulary
     def start_updates(self, interval = 0.1):
         self.update_interval = interval
-        thread.start_new_thread(self._update, ())
+        update_thread = Thread(target=self._update, args=())
+        update_thread.start()
+        print "started display update thread"
 
     def clear(self):
         """ Clear the display """
@@ -522,7 +528,10 @@ class VolumioClient:
         self._client.emit('seek', int(seconds))
 
     def wait(self, **kwargs):
-        self._client.wait(**kwargs)
+        wait_thread = Thread(target=self._client.wait, args=(kwargs))
+        wait_thread.start()
+        print "started websocket wait thread"
+        return wait_thread
 
 class Network(object):
     def __init__(self):
@@ -575,4 +584,23 @@ class Network(object):
                         if l][0][0]
         except:
             return None
+
+class PipeWriter:
+    IN=0
+    OUT=1
+    def __init__(self):
+        self.pipein, self.pipeout = os.pipe()
+
+    def write(self, command):
+        os.write(self.pipeout, '%s\n' % command)
+
+    def read(self):
+        return self.pipein.readline()[:-1]
+
+    def close(self, direction):
+        if direction == PipeWriter.IN:
+            os.close(self.pipein)
+        elif direction == PipeWriter.OUT:
+            os.close(self.pipeout)
+            self.pipein = os.fdopen(self.pipein)
 
