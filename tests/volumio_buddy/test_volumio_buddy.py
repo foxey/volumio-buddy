@@ -12,6 +12,7 @@ except ImportError:
 import wiringpi
 
 from os import path
+from time import sleep
 from volumio_buddy import volumio_buddy_setup, PushButton, RotaryEncoder, RGBLED, Display
 from volumio_buddy import __file__ as filename
 
@@ -86,9 +87,12 @@ class TestVolumioBuddy(unittest.TestCase):
         r.set_callback(callback_function, r, d)
         d[0] = 1
         self.assertEqual(r._decode_rotary(), (RotaryEncoder.RIGHT, 1))
+        sleep(1)
         self.assertEqual(r._decode_rotary(), (RotaryEncoder.RIGHT, 1))
         d[0] = 2
+        sleep(1)
         self.assertEqual(r._decode_rotary(), (RotaryEncoder.LEFT, 2))
+        sleep(1)
         self.assertEqual(r._decode_rotary(), (RotaryEncoder.LEFT, 2))
 
     @patch('wiringpi.softPwmWrite', autospec = True)

@@ -3,9 +3,7 @@
 # Author: Michiel Fokke <michiel@fokke.org>
 # vim: set ts=4 sw=4 expandtab si:
 
-import sys
-import os
-from time import time, sleep
+from os import path, fork
 from volumio_buddy import __file__ as filename
 from volumio_buddy import PushButton, RotaryEncoder, RGBLED, VolumioClient, Display, PipeWriter
 
@@ -115,13 +113,13 @@ RESET_PIN = 26
 
 pipe = PipeWriter()
 
-if os.fork() != 0:
+if fork() != 0:
     pipe.close(PipeWriter.OUT)
     led = RGBLED(LED_RED, LED_GREEN, LED_BLUE)
     led.set(0, 0, 10)
 
     display = Display(RESET_PIN)
-    display.image(os.path.dirname(os.path.realpath(filename)) + "/volumio.ppm")
+    display.image(path.dirname(path.realpath(filename)) + "/volumio.ppm")
     display.start_updates()
 
     while True:
@@ -133,6 +131,7 @@ if os.fork() != 0:
 # Wait for events from the websocket connection in separate thread
         client.wait()
         while True:
+            print 'waiting for command'
             command = '%s' % pipe.read()
             print 'recieved command: %s' % command
             if command == 'volume_up':
@@ -150,7 +149,6 @@ if os.fork() != 0:
                 display.menu(3)
             else:
                 print "unknown command"
-            print "sleeping"
 
 else:
     pipe.close(PipeWriter.IN)
