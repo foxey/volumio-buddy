@@ -1,4 +1,4 @@
-Adafruit_PureIO[![build status](https://travis-ci.org/foxey/volumio-buddy.svg?branch=master)](https://travis-ci.org/foxey/volumio-buddy)
+[![build status](https://travis-ci.org/foxey/volumio-buddy.svg?branch=master)](https://travis-ci.org/foxey/volumio-buddy)
 
 # volumio-buddy
 
