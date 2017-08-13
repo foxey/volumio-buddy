@@ -1,4 +1,4 @@
-[![build status](https://travis-ci.org/foxey/volumio-buddy.svg?branch=master)](https://travis-ci.org/foxey/volumio-buddy)
+Adafruit_PureIO[![build status](https://travis-ci.org/foxey/volumio-buddy.svg?branch=master)](https://travis-ci.org/foxey/volumio-buddy)
 
 # volumio-buddy
 
@@ -40,3 +40,12 @@ Then install the library and the script:
 Run the script:
 
 	volumio-buddy.py
+
+## alternative install using pip
+Install dependencies:
+
+	apt-get install -y python-dev libjpeg9-dev libfreetype6-dev swig pip
+	pip install Adafruit_PureIO
+	pip install volumio-buddy
+	
+The Adafruit install is necessary, because somehow, Adafruit doesn't manage the dependencies for their modules incorrectly...
