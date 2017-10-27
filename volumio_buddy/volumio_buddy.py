@@ -164,8 +164,6 @@ class RGBLED:
 class Display:
     """ Class for the user interface using a 164x64 OLED SSD1306 compatible display """
 
-    SCROLL_START = 0
-
 # Text modal type definitions
     STATUS_PLAY = 1
     STATUS_PAUSE = 2
@@ -196,6 +194,7 @@ class Display:
         self.reset_pin = reset_pin
         self._display =  Adafruit_SSD1306.SSD1306_128_64(rst=reset_pin)
         self._status = Display.STATUS_STOP
+        self._prev_status = Display.STATUS_STOP
         self._label = ""
         self._prev_label = ""
         self._duration = 0
@@ -204,10 +203,10 @@ class Display:
         self._modal = False
         self._modal_timeout = 0
         self._menu_item = 1
-        self._scroll = Display.SCROLL_START 
         self._display.begin()
         self.width = self._display.width
         self.height = self._display.height
+        self._scroll = -self.width
         self.update_interval = 0.1
 
 # Define image and draw objects for main screen and modal screen
@@ -284,19 +283,16 @@ class Display:
 
     def status(self, status_type, delay):
         """ Pop-up window with horizontally and vertically centered text label """
-        self._modal_timeout = time() + delay
-        if status_type == Display.STATUS_PLAY:
-            self._status = Display.STATUS_PLAY
-            textlabel = Display.TXT_PLAY
-        elif status_type == Display.STATUS_PAUSE:
-            self._status = Display.STATUS_PAUSE
-            textlabel = Display.TXT_PAUSE
-        elif status_type == Display.STATUS_STOP:
-            self._status = Display.STATUS_STOP
-            textlabel = Display.TXT_STOP
-        else:
-            textlabel = Display.TXT_UNKNOWN
-        self._modal = TextModal(self._image, self._font, textlabel)
+        if status_type not in [Display.STATUS_PLAY, Display.STATUS_PAUSE, Display.STATUS_STOP]:
+            return
+        self._prev_status = self._status
+        self._status = status_type
+        if status_type == Display.STATUS_PLAY and self._prev_status == Display.STATUS_PAUSE:
+            self._modal_timeout = time() + delay
+            self._modal = TextModal(self._image, self._font, Display.TXT_PLAY)
+        elif status_type == Display.STATUS_PAUSE and self._prev_status == Display.STATUS_PLAY:
+            self._modal_timeout = time() + delay
+            self._modal = TextModal(self._image, self._font, Display.TXT_PAUSE)
 
     def menu(self, delay):
         """ Cycle through the menu modals """
@@ -362,7 +358,7 @@ class Display:
 # Draw the artist, album and song title (scrolling)
         scrollable.draw(self._image, (0,v_offset), self._scroll)
 # Draw the current position in the song
-        self._draw.text(((50+self.width - separator_label_width)/2 - position_label_width, \
+        self._draw.text(((self.width - separator_label_width)/2 - position_label_width, \
                 v_offset + scrollable.textheight + v_padding), \
                 position_label, font=self._font, fill=1)
 # Draw the total duration of the song + the separator. Ensure that the separator is centered horizontally
@@ -376,7 +372,9 @@ class Display:
             self._draw.rectangle((0, self.height - 1 - bar_height, \
                            int((self.width - 1)*rel_position), self.height - 1), outline=1, fill=1)
 # Increment the scroll 'cursor'
-        self._scroll = (self._scroll + 10) % 1000000
+        self._scroll = self._scroll + 10
+        if self._scroll > 1000000:
+           self._scroll = -self.width
 
     def update_main_screen(self, label, duration, seek):
         """ Update the text label, the seek time and the duration on the current song """
@@ -386,7 +384,7 @@ class Display:
         self._main_screen_last_updated = time()
 # Reset scroll offset when the label changes
         if label != self._prev_label:
-            self._scroll = Display.SCROLL_START
+            self._scroll = -self.width
             self._prev_label = label
 
 class Modal(object):
@@ -478,11 +476,13 @@ class ScrollableText:
     def draw(self, image, position, offset):
         """ Draw the label on (x,y) position of an image with starting at <offset> """
         width, height = image.size
-        if self.textwidth > width:
-            i = offset % (self.textwidth+int(0.1*width))
-        else:
-            i = 0
+        i = 0
+        if self.textwidth <= width:
             position = (int((width-self.textwidth)/2),position[1])
+        elif offset < 0:
+            position = (-offset, position[1])
+        else:
+            i = offset % (self.textwidth+int(0.1*width))
         temp=self._image.crop((i,0,width+i,self.textheight))
         wiringpi.piLock(0)
         image.paste(temp, position)
