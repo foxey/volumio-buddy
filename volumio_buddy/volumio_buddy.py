@@ -164,8 +164,7 @@ class RGBLED:
 class Display:
     """ Class for the user interface using a 164x64 OLED SSD1306 compatible display """
 
-# Offset to start scrolling text
-    SCROLL_START = -100
+    SCROLL_START = 0
 
 # Text modal type definitions
     STATUS_PLAY = 1
@@ -363,7 +362,7 @@ class Display:
 # Draw the artist, album and song title (scrolling)
         scrollable.draw(self._image, (0,v_offset), self._scroll)
 # Draw the current position in the song
-        self._draw.text(((self.width - separator_label_width)/2 - position_label_width, \
+        self._draw.text(((50+self.width - separator_label_width)/2 - position_label_width, \
                 v_offset + scrollable.textheight + v_padding), \
                 position_label, font=self._font, fill=1)
 # Draw the total duration of the song + the separator. Ensure that the separator is centered horizontally
