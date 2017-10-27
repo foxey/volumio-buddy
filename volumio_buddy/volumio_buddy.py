@@ -187,9 +187,9 @@ class Display:
     TXT_INA_ERROR2 = "out of range"
 
     MENU_ITEMS = 3
-    MENU_NETWORK = 1
-    MENU_WIFI = 2
-    MENU_INA219 = 3
+    MENU_INA219 = 1
+    MENU_NETWORK = 2
+    MENU_WIFI = 3
 
     SHUNT_OHMS = 0.1
 
@@ -305,18 +305,18 @@ class Display:
         ina = INA219(Display.SHUNT_OHMS)
         ina.configure()
 
+        if network.my_ip():
+            my_ip = network.my_ip()
+        else:
+            my_ip = Display.TXT_NONE
+        self._modal_timeout = time() + delay
         if self._menu_item == Display.MENU_INA219:
             try:
                 textlabel = (Display.TXT_VOLTAGE + ": %.3f V" % ina.voltage(), \
                                 Display.TXT_POWER + ": %d mW" % ina.power())
             except DeviceRangeError:
                 texttabel = (Display.TXT_INA_ERROR1, Display.TXT_INA_ERROR2)
-        elif network.my_ip():
-            my_ip = network.my_ip()
-        else:
-            my_ip = Display.TXT_NONE
-        self._modal_timeout = time() + delay
-        if self._menu_item == Display.MENU_NETWORK:
+        elif self._menu_item == Display.MENU_NETWORK:
             textlabel = (Display.TXT_SSID + ": " + str(network.wpa_supplicant["ssid"]), \
                             Display.TXT_IP + ": " + str(my_ip))
         elif self._menu_item == Display.MENU_WIFI:
