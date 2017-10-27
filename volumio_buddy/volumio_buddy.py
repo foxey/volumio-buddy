@@ -26,6 +26,9 @@ from PIL import ImageFont
 from socketIO_client import SocketIO, LoggingNamespace
 import json
 
+# Imports for INA219 Voltage Sensor Library
+from ina219 import INA219, DeviceRangeError
+
 def volumio_buddy_setup():
     """ Setup WiringPi and ensure that it is only executed once """
     global _volumio_buddy_is_setup
@@ -161,6 +164,9 @@ class RGBLED:
 class Display:
     """ Class for the user interface using a 164x64 OLED SSD1306 compatible display """
 
+# Offset to start scrolling text
+    SCROLL_START = -100
+
 # Text modal type definitions
     STATUS_PLAY = 1
     STATUS_PAUSE = 2
@@ -175,10 +181,17 @@ class Display:
     TXT_SSID = "ssid"
     TXT_IP = "ip"
     TXT_PASSWORD = "pw"
+    TXT_VOLTAGE = "Vbatt"
+    TXT_POWER = "Power"
+    TXT_INA_ERROR1 = "Voltage reading"
+    TXT_INA_ERROR2 = "out of range"
 
-    MENU_ITEMS = 2
+    MENU_ITEMS = 3
     MENU_NETWORK = 1
     MENU_WIFI = 2
+    MENU_INA219 = 3
+
+    SHUNT_OHMS = 0.1
 
     def __init__(self, reset_pin):
         self.reset_pin = reset_pin
@@ -192,7 +205,7 @@ class Display:
         self._modal = False
         self._modal_timeout = 0
         self._menu_item = 1
-        self._scroll = 0
+        self._scroll = Display.SCROLL_START 
         self._display.begin()
         self.width = self._display.width
         self.height = self._display.height
@@ -289,16 +302,25 @@ class Display:
     def menu(self, delay):
         """ Cycle through the menu modals """
         network = Network()
-        if network.my_ip():
+        ina = INA219(Display.SHUNT_OHMS)
+        ina.configure()
+
+        if self._menu_item == Display.MENU_INA219:
+            try:
+                textlabel = (Display.TXT_VOLTAGE + ": %.3f V" % ina.voltage(), \
+                                Display.TXT_POWER + ": %d mW" % ina.power())
+            except DeviceRangeError:
+                texttabel = (Display.TXT_INA_ERROR1, Display.TXT_INA_ERROR2)
+        elif network.my_ip():
             my_ip = network.my_ip()
         else:
             my_ip = Display.TXT_NONE
         self._modal_timeout = time() + delay
         if self._menu_item == Display.MENU_NETWORK:
-            textlabel = (Display.TXT_SSID + ": " + network.wpa_supplicant["ssid"], \
+            textlabel = (Display.TXT_SSID + ": " + str(network.wpa_supplicant["ssid"]), \
                             Display.TXT_IP + ": " + str(my_ip))
         elif self._menu_item == Display.MENU_WIFI:
-            textlabel = (Display.TXT_SSID + ": " + network.hostapd["ssid"], \
+            textlabel = (Display.TXT_SSID + ": " + str(network.hostapd["ssid"]), \
                             Display.TXT_PASSWORD + ": " + network.hostapd["wpa_passphrase"])
         else:
             textlabel = (Display.TXT_UNKNOWN, '')
@@ -365,7 +387,7 @@ class Display:
         self._main_screen_last_updated = time()
 # Reset scroll offset when the label changes
         if label != self._prev_label:
-            self._scroll = 0
+            self._scroll = Display.SCROLL_START
             self._prev_label = label
 
 class Modal(object):
