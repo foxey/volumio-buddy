@@ -164,6 +164,12 @@ class RGBLED:
 class Display:
     """ Class for the user interface using a 164x64 OLED SSD1306 compatible display """
 
+# Default show duration for modal windows (sec)
+    MODAL_DURATION = 3
+
+# Menu reset timeout
+    MENU_TIMEOUT = 3 * MODAL_DURATION
+
 # Text modal type definitions
     STATUS_PLAY = 1
     STATUS_PAUSE = 2
@@ -173,22 +179,6 @@ class Display:
     TXT_PLAY = "Play"
     TXT_PAUSE = "Pause"
     TXT_STOP = "Stop"
-    TXT_UNKNOWN = "Huh?"
-    TXT_NONE = "none"
-    TXT_SSID = "ssid"
-    TXT_IP = "ip"
-    TXT_PASSWORD = "pw"
-    TXT_VOLTAGE = "Vbatt"
-    TXT_POWER = "Power"
-    TXT_INA_ERROR1 = "Voltage reading"
-    TXT_INA_ERROR2 = "out of range"
-
-    MENU_ITEMS = 3
-    MENU_INA219 = 1
-    MENU_NETWORK = 2
-    MENU_WIFI = 3
-
-    SHUNT_OHMS = 0.1
 
     def __init__(self, reset_pin):
         self.reset_pin = reset_pin
@@ -202,7 +192,10 @@ class Display:
         self._main_screen_last_updated = 0
         self._modal = False
         self._modal_timeout = 0
-        self._menu_item = 1
+        self._modal_duration = Display.MODAL_DURATION
+        self._menu_item = 0
+        self._menu_items = None
+        self._menu_timeout = Display.MENU_TIMEOUT
         self._display.begin()
         self.width = self._display.width
         self.height = self._display.height
@@ -275,54 +268,41 @@ class Display:
         self._draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
         self.display(self._image)
 
-    def volume(self, level, delay):
+    def volume(self, level):
         """ Pop-up window with slider bar for volume """
         textlabel = Display.TXT_VOLUME + ' ' + str(int(level))
-        self._modal_timeout = time() + delay
+        self._modal_timeout = time() + self._modal_duration
         self._modal = BarModal(self._image, self._font, textlabel, level)
 
-    def status(self, status_type, delay):
+    def status(self, status_type):
         """ Pop-up window with horizontally and vertically centered text label """
-        if status_type not in [Display.STATUS_PLAY, Display.STATUS_PAUSE, Display.STATUS_STOP]:
+        if status_type not in [Display.STATUS_PLAY, Display.STATUS_PAUSE, Display.STATUS_STOP] \
+            or status_type == self._status:
             return
         self._prev_status = self._status
         self._status = status_type
         if status_type == Display.STATUS_PLAY and self._prev_status == Display.STATUS_PAUSE:
-            self._modal_timeout = time() + delay
+            self._modal_timeout = time() + self._modal_duration
             self._modal = TextModal(self._image, self._font, Display.TXT_PLAY)
         elif status_type == Display.STATUS_PAUSE and self._prev_status == Display.STATUS_PLAY:
-            self._modal_timeout = time() + delay
+            self._modal_timeout = time() + self._modal_duration
             self._modal = TextModal(self._image, self._font, Display.TXT_PAUSE)
 
-    def menu(self, delay):
-        """ Cycle through the menu modals """
-        network = Network()
-        ina = INA219(Display.SHUNT_OHMS)
-        ina.configure()
+    def set_modal_duration(self, duration):
+        self._modal_duration = duration
 
-        if network.my_ip():
-            my_ip = network.my_ip()
-        else:
-            my_ip = Display.TXT_NONE
-        self._modal_timeout = time() + delay
-        if self._menu_item == Display.MENU_INA219:
-            try:
-                textlabel = (Display.TXT_VOLTAGE + ": %.3f V" % ina.voltage(), \
-                                Display.TXT_POWER + ": %d mW" % ina.power())
-            except DeviceRangeError:
-                texttabel = (Display.TXT_INA_ERROR1, Display.TXT_INA_ERROR2)
-        elif self._menu_item == Display.MENU_NETWORK:
-            textlabel = (Display.TXT_SSID + ": " + str(network.wpa_supplicant["ssid"]), \
-                            Display.TXT_IP + ": " + str(my_ip))
-        elif self._menu_item == Display.MENU_WIFI:
-            textlabel = (Display.TXT_SSID + ": " + str(network.hostapd["ssid"]), \
-                            Display.TXT_PASSWORD + ": " + network.hostapd["wpa_passphrase"])
-        else:
-            textlabel = (Display.TXT_UNKNOWN, '')
+    def set_menu_items(self, *items):
+        self._menu_items = items[0]
+
+    def menu(self):
+        """ Cycle through the menu modals """
+        if self._modal_timeout + self._menu_timeout < time():
+            self._menu_item = 0
+        textlabel = self._menu_items[self._menu_item].textlabel()
+        self._modal_timeout = time() + self._modal_duration
         self._modal = TwoLineTextModal(self._image, self._modal_font, textlabel)
         self._menu_item = self._menu_item + 1
-        if self._menu_item > Display.MENU_ITEMS:
-            self._menu_item = 1
+        self._menu_item = (self._menu_item + 1) % len(self._menu_items)
 
     def draw_main_screen(self):
         v_offset = 2
@@ -373,7 +353,7 @@ class Display:
                            int((self.width - 1)*rel_position), self.height - 1), outline=1, fill=1)
 # Increment the scroll 'cursor'
         self._scroll = self._scroll + 10
-        if self._scroll > 1000000:
+        if self._scroll > scrollable.textwidth:
            self._scroll = -self.width
 
     def update_main_screen(self, label, duration, seek):
@@ -606,7 +586,7 @@ class Network(object):
         except:
             return None
 
-class PipeWriter:
+class PipeWriter(object):
     IN=0
     OUT=1
     def __init__(self):
@@ -625,3 +605,47 @@ class PipeWriter:
             os.close(self.pipeout)
             self.pipein = os.fdopen(self.pipein)
 
+class Battery(object):
+    SHUNT_OHMS = 0.1
+    FULL = 21.0
+    LOW = 14.5
+    WARN = 15.9
+    SHUTDOWN = 14.0
+    def __init__(self):
+        self._ina = INA219(Battery.SHUNT_OHMS)
+        self._ina.configure()
+        self._warn_function = None
+        self._warn_function_args = None
+        self._shutdown_function = None
+        self._shutdown_function_args = None
+
+    def voltage(self):
+        return self._ina.voltage()
+
+    def level(self):
+        return int(100*(self.voltage()-Battery.LOW)/(Battery.FULL-Battery.LOW))
+
+    def set_warn_function(self, function, *args):
+        self._warn_function = function
+        self._warn_function_args = args
+
+    def set_shutdown_function(self, function, *args):
+        self._shutdown_function = function
+        self._shutdown_function_args = args
+
+    def start_monitor(self, *args):
+        wait_thread = Thread(target=self._monitor, args=(kwargs))
+        wait_thread.start()
+        print "started battery polling thread"
+        return wait_thread
+
+    def _monitor(self, polling_interval=10):
+        while True:
+            voltage=self.voltage()
+            if voltage <= Battery.WARN and self._warn_function:
+                print "Battery._monitor: call _warn_function"
+                self._warn_function(*self._warn_function_args)
+            if voltage <= Battery.SHUTDOWN and self._shutdown_function:
+                print "Battery._monitor: call _shutdown_function"
+                self._shutdown_function(*self._shutdown_function_args)
+            sleep(polling_interval)

@@ -5,7 +5,7 @@
 
 from os import path, fork
 from volumio_buddy import __file__ as filename
-from volumio_buddy import PushButton, RotaryEncoder, RGBLED, VolumioClient, Display, PipeWriter
+from volumio_buddy import PushButton, RotaryEncoder, RGBLED, VolumioClient, Display, PipeWriter, Network, Battery
 
 from wiringpi import delay
 
@@ -27,6 +27,9 @@ def previous_next(rotary_encoder, pipe):
 
 def toggle_play(pipe):
     pipe.write("toggle_play")
+
+def show_menu(pipe):
+    pipe.write('show_menu')
 
 def print_state(client, display, led):
 # Tedious input sanitation
@@ -72,26 +75,60 @@ def print_state(client, display, led):
 
 # Show volume modal if the volume changed
     if volume <> prev_volume:
-        display.volume(volume, 3)
-# Show status modal & change LED colour if the status changed (between play, pause & stop)
-    elif status <> prev_status:
-        if status == "play":
-            display.status(Display.STATUS_PLAY, 3)
-            led.set(0, 10, 0)
-        elif status == "pause":
-            display.status(Display.STATUS_PAUSE, 3)
-            led.set(0, 0, 10)
-        elif status == "stop":
-            display.status(Display.STATUS_STOP, 3)
-            led.set(0, 0, 10)
+        display.volume(volume)
+# Update display status & change LED colour
+    if status == "play":
+        display.status(Display.STATUS_PLAY)
+        led.set(0, 10, 0)
+    elif status == "pause":
+        display.status(Display.STATUS_PAUSE)
+        led.set(0, 0, 10)
+    elif status == "stop":
+        display.status(Display.STATUS_STOP)
+        led.set(0, 0, 10)
 
 # Debug information
+    print
     print "status: " + status
+    print "song: " + artist + album + title
+    print "duration: " + str(duration)
     print "seek: " + str(seek)
     print "volume: " + str(volume)
+    print
 
-def show_menu(pipe):
-    pipe.write('show_menu')
+class BatteryMenuItem(object):
+    TXT_LEVEL = "Battery"
+    TXT_VOLTAGE = "Voltage"
+    def __init__(self):
+        self._battery = Battery()
+    def textlabel(self):
+        textlabel = (BatteryMenuItem.TXT_LEVEL+ ": %d%%" % self._battery.level(), \
+                        BatteryMenuItem.TXT_VOLTAGE+ ": %.2f V" % self._battery.voltage())
+        return textlabel
+
+class IPMenuItem(object):
+    TXT_SSID = "ssid"
+    TXT_IP = "ip"
+    TXT_NONE = "none"
+    def __init__(self):
+        self._network = Network()
+    def textlabel(self):
+        my_ip = self._network.my_ip() or IPMenuItem.TXT_NONE
+        textlabel = (IPMenuItem.TXT_SSID + ": " + str(self._network.wpa_supplicant["ssid"]), \
+                        IPMenuItem.TXT_IP + ": " + str(my_ip))
+        return textlabel
+        
+
+class HotspotMenuItem(object):
+    TXT_SSID = "ssid"
+    TXT_PASSWORD = "pw"
+    def __init__(self):
+        self._network = Network()
+    def textlabel(self):
+        textlabel = (HotspotMenuItem.TXT_SSID + ": " + str(self._network.hostapd["ssid"]), \
+                        HotspotMenuItem.TXT_PASSWORD + ": " + self._network.hostapd["wpa_passphrase"])
+        return textlabel
+        
 
 # Rotary encoder 1 pins (WiringPi numbering)
 PB1 = 0
@@ -120,6 +157,12 @@ if fork() != 0:
 
     display = Display(RESET_PIN)
     display.image(path.dirname(path.realpath(filename)) + "/volumio.ppm")
+    display.set_modal_duration(3)
+    menu_items = []
+    menu_items.append(BatteryMenuItem())
+    menu_items.append(IPMenuItem())
+    menu_items.append(HotspotMenuItem())
+    display.set_menu_items(menu_items)
     display.start_updates()
 
     while True:
@@ -145,8 +188,8 @@ if fork() != 0:
             elif command == 'toggle_play':
                 client.toggle_play()
             elif command == 'show_menu':
-# Display the menu modal for 3 sec
-                display.menu(3)
+# Display the menu modal
+                display.menu()
             else:
                 print "unknown command"
 
