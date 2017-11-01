@@ -609,7 +609,7 @@ class Battery(object):
     SHUNT_OHMS = 0.1
     FULL = 21.0
     LOW = 14.5
-    WARN = 15.9
+    WARN = 16.0
     SHUTDOWN = 14.0
     def __init__(self):
         self._ina = INA219(Battery.SHUNT_OHMS)
@@ -633,7 +633,7 @@ class Battery(object):
         self._shutdown_function = function
         self._shutdown_function_args = args
 
-    def start_monitor(self, *args):
+    def start_monitor(self, *kwargs):
         wait_thread = Thread(target=self._monitor, args=(kwargs))
         wait_thread.start()
         print "started battery polling thread"
@@ -643,9 +643,9 @@ class Battery(object):
         while True:
             voltage=self.voltage()
             if voltage <= Battery.WARN and self._warn_function:
-                print "Battery._monitor: call _warn_function"
+                print "Battery._monitor: call _warn_function (v=%.3f)" % voltage
                 self._warn_function(*self._warn_function_args)
             if voltage <= Battery.SHUTDOWN and self._shutdown_function:
-                print "Battery._monitor: call _shutdown_function"
+                print "Battery._monitor: call _shutdown_function (v=%.3f)" % voltage
                 self._shutdown_function(*self._shutdown_function_args)
             sleep(polling_interval)

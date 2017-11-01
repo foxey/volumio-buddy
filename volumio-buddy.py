@@ -4,6 +4,7 @@
 # vim: set ts=4 sw=4 expandtab si:
 
 from os import path, fork
+import subprocess
 from volumio_buddy import __file__ as filename
 from volumio_buddy import PushButton, RotaryEncoder, RGBLED, VolumioClient, Display, PipeWriter, Network, Battery
 
@@ -96,6 +97,12 @@ def print_state(client, display, led):
     print "volume: " + str(volume)
     print
 
+def low_battery_warning(led):
+    led.set(10, 0, 0)
+
+def empty_battery():
+    subprocess.call(["shutdown", "now"])
+
 class BatteryMenuItem(object):
     TXT_LEVEL = "Battery"
     TXT_VOLTAGE = "Voltage"
@@ -154,6 +161,11 @@ if fork() != 0:
     pipe.close(PipeWriter.OUT)
     led = RGBLED(LED_RED, LED_GREEN, LED_BLUE)
     led.set(0, 0, 10)
+
+    battery=Battery()
+    battery.set_warn_function(low_battery_warning, led)
+    battery.set_shutdown_function(empty_battery)
+    battery.start_monitor()
 
     display = Display(RESET_PIN)
     display.image(path.dirname(path.realpath(filename)) + "/volumio.ppm")
