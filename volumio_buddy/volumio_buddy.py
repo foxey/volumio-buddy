@@ -529,10 +529,15 @@ class VolumioClient:
         self._client.emit('seek', int(seconds))
 
     def wait(self, **kwargs):
-        wait_thread = Thread(target=self._client.wait, args=(kwargs))
-        wait_thread.start()
+        self.wait_thread = Thread(target=self._wait, args=(kwargs))
+        self.wait_thread.start()
         print "started websocket wait thread"
-        return wait_thread
+        return self.wait_thread
+
+    def _wait(self, **kwargs):
+        while True:
+            self._client.wait(kwargs)
+            print "websocket wait loop terminated, restarting"
 
 class Network(object):
     def __init__(self):

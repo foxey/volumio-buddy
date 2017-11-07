@@ -101,7 +101,7 @@ def low_battery_warning(led):
     led.set(10, 0, 0)
 
 def empty_battery():
-    subprocess.call(["shutdown", "now"])
+    subprocess.call(["/sbin/shutdown", "now"])
 
 class BatteryMenuItem(object):
     TXT_LEVEL = "Battery"
