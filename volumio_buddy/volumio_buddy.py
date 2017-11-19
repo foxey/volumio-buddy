@@ -612,31 +612,37 @@ class PipeWriter(object):
 
 class Battery(object):
     SHUNT_OHMS = 0.1
-    FULL = 21.0
-    LOW = 14.5
-    WARN = 16.0
-    SHUTDOWN = 14.0
+    CELL_COUNT = 5
+    FULL = 4.2 # Maximum voltage of a 18650 LiPo Cell
+    LOW = 2.9
+    WARN = 3.2
+    EMPTY = 2.8
     def __init__(self):
         self._ina = INA219(Battery.SHUNT_OHMS)
         self._ina.configure()
+        self.cell_count = Battery.CELL_COUNT
+        self.full = Battery.FULL
+        self.low = Battery.LOW
+        self.warm = Battery.WARN
+        self.empty = Battery.EMPTY
         self._warn_function = None
         self._warn_function_args = None
-        self._shutdown_function = None
-        self._shutdown_function_args = None
+        self._empty_function = None
+        self._empty_function_args = None
 
     def voltage(self):
         return self._ina.voltage()
 
     def level(self):
-        return int(100*(self.voltage()-Battery.LOW)/(Battery.FULL-Battery.LOW))
+        return int(100*(self.voltage()/self.cell_count-self.low)/(self.full-self.low))
 
     def set_warn_function(self, function, *args):
         self._warn_function = function
         self._warn_function_args = args
 
-    def set_shutdown_function(self, function, *args):
-        self._shutdown_function = function
-        self._shutdown_function_args = args
+    def set_empty_function(self, function, *args):
+        self._empty_function = function
+        self._empty_function_args = args
 
     def start_monitor(self, *kwargs):
         wait_thread = Thread(target=self._monitor, args=(kwargs))
@@ -647,10 +653,10 @@ class Battery(object):
     def _monitor(self, polling_interval=10):
         while True:
             voltage=self.voltage()
-            if voltage <= Battery.WARN and self._warn_function:
+            if voltage <= self.cell_count*self.warn and self._warn_function:
                 print "Battery._monitor: call _warn_function (v=%.3f)" % voltage
                 self._warn_function(*self._warn_function_args)
-            if voltage <= Battery.SHUTDOWN and self._shutdown_function:
-                print "Battery._monitor: call _shutdown_function (v=%.3f)" % voltage
-                self._shutdown_function(*self._shutdown_function_args)
+            if voltage <= self.cell_count*self.EMPTY and self._empty_function:
+                print "Battery._monitor: call _empty_function (v=%.3f)" % voltage
+                self._empty_function(*self._empty_function_args)
             sleep(polling_interval)

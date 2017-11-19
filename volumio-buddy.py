@@ -164,7 +164,7 @@ if fork() != 0:
 
     battery=Battery()
     battery.set_warn_function(low_battery_warning, led)
-    battery.set_shutdown_function(empty_battery)
+    battery.set_empty_function(empty_battery)
     battery.start_monitor()
 
     display = Display(RESET_PIN)
