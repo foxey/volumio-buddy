@@ -623,7 +623,7 @@ class Battery(object):
         self.cell_count = Battery.CELL_COUNT
         self.full = Battery.FULL
         self.low = Battery.LOW
-        self.warm = Battery.WARN
+        self.warn = Battery.WARN
         self.empty = Battery.EMPTY
         self._warn_function = None
         self._warn_function_args = None
