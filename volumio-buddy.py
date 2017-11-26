@@ -98,7 +98,7 @@ def print_state(client, display, led):
         print "volume: " + str(volume)
         print
     except Exception as e:
-        print "encountered " + type(e) + " exception."
+        print "encountered " + str(type(e)) + " exception."
         print e.args
 
 def low_battery_warning(led):
