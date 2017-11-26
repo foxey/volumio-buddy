@@ -89,13 +89,17 @@ def print_state(client, display, led):
         led.set(0, 0, 10)
 
 # Debug information
-    print
-    print "status: " + status
-    print "song: " + artist + album + title
-    print "duration: " + str(duration)
-    print "seek: " + str(seek)
-    print "volume: " + str(volume)
-    print
+    try:
+        print
+        print "status: " + status
+        print "song: " + artist + album + title
+        print "duration: " + str(duration)
+        print "seek: " + str(seek)
+        print "volume: " + str(volume)
+        print
+    except Exception as e:
+        print "encountered " + type(e) + " exception."
+        print e.args
 
 def low_battery_warning(led):
     led.set(10, 0, 0)
