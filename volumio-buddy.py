@@ -91,8 +91,8 @@ def print_state(client, display, led):
 # Debug information
     try:
         print
-        print "status: " + status
-        print "song: " + artist + album + title
+        print "status: " + str(status)
+        print "song: " + artist.encode('utf-8') + album.encode('utf-8') + title.encode('utf-8')
         print "duration: " + str(duration)
         print "seek: " + str(seek)
         print "volume: " + str(volume)
