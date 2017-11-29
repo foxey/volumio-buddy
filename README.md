@@ -1,4 +1,5 @@
 [![build status](https://travis-ci.org/foxey/volumio-buddy.svg?branch=master)](https://travis-ci.org/foxey/volumio-buddy)
+[![PyPI version](https://badge.fury.io/py/volumio-buddy.svg)](https://pypi.python.org/pypi/volumio-buddy)
 
 # volumio-buddy
 
