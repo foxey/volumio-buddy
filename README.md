@@ -45,10 +45,7 @@ Run the script:
 ## alternative install using pip
 Install dependencies:
 
-	apt-get install -y python-dev libjpeg9-dev libfreetype6-dev swig pip
-	pip install Adafruit_PureIO
-	
-The Adafruit_PureIO install is necessary, because somehow, Adafruit doesn't manage the dependencies for their modules incorrectly...
+	apt-get install -y python-dev libjpeg9-dev libfreetype6-dev swig python-pip
 
 Install volumio buddy:
 	pip install volumio-buddy
