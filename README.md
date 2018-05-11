@@ -48,4 +48,5 @@ Install dependencies:
 	apt-get install -y python-dev libjpeg9-dev libfreetype6-dev swig python-pip
 
 Install volumio buddy:
+
 	pip install volumio-buddy
