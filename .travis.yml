@@ -11,7 +11,7 @@ addons:
 before_install:
 - sudo apt-get -qq update
 - sudo apt-get install -y zlib1g-dev libjpeg-dev python-dev swig
-- sudo pip install coverage
+- sudo pip install backports.unittest_mock coverage
 install:
 - python setup.py install
 script:
