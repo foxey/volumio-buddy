@@ -7,8 +7,14 @@ try:
     import mock
     from mock import call, patch
 except ImportError:
-    from unittest import mock
+    try:
+        from unittest import mock
+    except ImportError:
+        import backports.unittest_mock
+        backports.unittest_mock.install()
+        from unittest import mock
     from unittest.mock import call, patch
+
 import wiringpi
 
 from os import path
