@@ -16,7 +16,7 @@ def update_volume(rotary_encoder, pipe):
     elif rotary_encoder.direction == RotaryEncoder.RIGHT:
         pipe.write("volume_up")
     else:
-        print "unknown rotary encoder event"
+        print("unknown rotary encoder event")
 
 def previous_next(rotary_encoder, pipe):
     if rotary_encoder.direction == RotaryEncoder.LEFT:
@@ -24,7 +24,7 @@ def previous_next(rotary_encoder, pipe):
     elif rotary_encoder.direction == RotaryEncoder.RIGHT:
         pipe.write("next_song")
     else:
-        print "unknown rotary encoder event"
+        print("unknown rotary encoder event")
 
 def toggle_play(pipe):
     pipe.write("toggle_play")
@@ -90,16 +90,16 @@ def print_state(client, display, led):
 
 # Debug information
     try:
-        print
-        print "status: " + str(status)
-        print "song: " + artist.encode('utf-8') + album.encode('utf-8') + title.encode('utf-8')
-        print "duration: " + str(duration)
-        print "seek: " + str(seek)
-        print "volume: " + str(volume)
-        print
+        print("")
+        print("status: " + str(status))
+        print("song: " + artist.encode('utf-8') + album.encode('utf-8') + title.encode('utf-8'))
+        print("duration: " + str(duration))
+        print("seek: " + str(seek))
+        print("volume: " + str(volume))
+        print("")
     except Exception as e:
-        print "encountered " + str(type(e)) + " exception."
-        print e.args
+        print("encountered " + str(type(e)) + " exception.")
+        print(e.args)
 
 def low_battery_warning(led):
     led.set(10, 0, 0)
@@ -183,16 +183,16 @@ if fork() != 0:
 
     while True:
 # Ensure client restarts after network disconnection
-        print "start websocket connection"
+        print("start websocket connection")
         client=VolumioClient()
         client.set_callback(print_state, client, display, led)
 
 # Wait for events from the websocket connection in separate thread
         client.wait()
         while True:
-            print 'waiting for command'
+            print('waiting for command')
             command = '%s' % pipe.read()
-            print 'recieved command: %s' % command
+            print('recieved command: %s' % command)
             if command == 'volume_up':
                 client.volume_up()
             elif command == 'volume_down':
@@ -207,7 +207,7 @@ if fork() != 0:
 # Display the menu modal
                 display.menu()
             else:
-                print "unknown command"
+                print("unknown command")
 
 else:
     pipe.close(PipeWriter.IN)
