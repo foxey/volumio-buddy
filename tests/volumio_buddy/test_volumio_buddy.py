@@ -18,6 +18,7 @@ from volumio_buddy import __file__ as filename
 
 @patch('wiringpi.wiringPiSetup', autospec=True)
 @patch('wiringpi.pinMode', autospec=True)
+@patch('wiringpi.pullUpDnControl', autospec=True)
 @patch('wiringpi.wiringPiISR', autospec=True)
 
 class TestVolumioBuddy(unittest.TestCase):
