@@ -23,7 +23,9 @@ from volumio_buddy import __file__ as filename
 
 class TestVolumioBuddy(unittest.TestCase):
         
-    def test0_volumio_buddy_setup(self, mock_wiringpi_ISR, mock_wiringpi_pinMode, mock_wiringpi_setup):
+    def test0_volumio_buddy_setup(self, mock_wiringpi_ISR,
+                                  mock_pullUpDnControl, mock_wiringpi_pinMode,
+                                  mock_wiringpi_setup):
         volumio_buddy_setup()
         mock_wiringpi_setup.assert_called_once_with()
         volumio_buddy_setup()
@@ -31,7 +33,10 @@ class TestVolumioBuddy(unittest.TestCase):
         volumio_buddy_setup()
         mock_wiringpi_setup.assert_called_once_with()
 
-    def test1_PushButton_set_callback(self, mock_wiringpi_ISR, mock_wiringpi_pinMode, mock_wiringpi_setup):
+    def test1_PushButton_set_callback(self, mock_wiringpi_ISR,
+                                      mock_pullUpDnControl,
+                                      mock_wiringpi_pinMode,
+                                      mock_wiringpi_setup):
         d = dict()
         d[0] = 1
         def callback_function(arg):
@@ -42,7 +47,10 @@ class TestVolumioBuddy(unittest.TestCase):
         p.set_callback(callback_function, d)
         mock_wiringpi_ISR.assert_called_with(gpio_pin, wiringpi.INT_EDGE_BOTH, p._callback)
 
-    def test2_PushButton__callback(self, mock_wiringpi_ISR, mock_wiringpi_pinMode, mock_wiringpi_setup):
+    def test2_PushButton__callback(self, mock_wiringpi_ISR,
+                                   mock_pullUpDnControl,
+                                   mock_wiringpi_pinMode,
+                                   mock_wiringpi_setup):
         d = dict()
         d[0] = 1
         def callback_function(arg):
@@ -53,7 +61,10 @@ class TestVolumioBuddy(unittest.TestCase):
         p.set_callback(callback_function, d)
         self.assertEqual(p._callback(), 1)
 
-    def test3_PushButton__callback(self, mock_wiringpi_ISR, mock_wiringpi_pinMode, mock_wiringpi_setup):
+    def test3_PushButton__callback(self, mock_wiringpi_ISR,
+                                   mock_pullUpDnControl,
+                                   mock_wiringpi_pinMode,
+                                   mock_wiringpi_setup):
         d = dict()
         d[0] = 1
         def callback_function(arg):
@@ -65,7 +76,10 @@ class TestVolumioBuddy(unittest.TestCase):
         d[0] = 2
         self.assertEqual(p._callback(), 2)
 
-    def test4_RotaryEncoder_set_callback(self, mock_wiringpi_ISR, mock_wiringpi_pinMode, mock_wiringpi_setup):
+    def test4_RotaryEncoder_set_callback(self, mock_wiringpi_ISR,
+                                         mock_pullUpDnControl,
+                                         mock_wiringpi_pinMode,
+                                         mock_wiringpi_setup):
         d = dict()
         d[0] = 1
         def callback_function(arg):
@@ -77,8 +91,11 @@ class TestVolumioBuddy(unittest.TestCase):
         mock_wiringpi_ISR.assert_called_with(gpio_pin_b, wiringpi.INT_EDGE_BOTH, r._decode_rotary)
 
     @patch('wiringpi.digitalRead', side_effect=[0, 1, 1, 1, 0 , 1, 0, 0])
-    def test5_RotaryEncoder_set_callback(self, mock_wiringpi_digital_read, mock_wiringpi_ISR, \
-            mock_wiringpi_pinMode, mock_wiringpi_setup):
+    def test5_RotaryEncoder_set_callback(self, mock_wiringpi_digital_read,
+                                         mock_wiringpi_ISR,
+                                         mock_pullUpDnControl,
+                                         mock_wiringpi_pinMode,
+                                         mock_wiringpi_setup):
         d = dict()
         def callback_function(r, arg):
             return r.direction, d[0]
@@ -98,8 +115,10 @@ class TestVolumioBuddy(unittest.TestCase):
 
     @patch('wiringpi.softPwmWrite', autospec = True)
     @patch('wiringpi.softPwmCreate', autospec = True)
-    def test6_RGBLED_set(self, mock_wiringpi_softPwmCreate, mock_wiringpi_softPwmWrite, \
-            mock_wiringpi_ISR, mock_wiringpi_pinMode, mock_wiringpi_setup):
+    def test6_RGBLED_set(self, mock_wiringpi_softPwmCreate,
+                         mock_wiringpi_softPwmWrite, mock_wiringpi_ISR,
+                         mock_pullUpDnControl, mock_wiringpi_pinMode,
+                         mock_wiringpi_setup):
         gpio_pin_r = 10
         gpio_pin_g = 8
         gpio_pin_b = 6
@@ -117,8 +136,9 @@ class TestVolumioBuddy(unittest.TestCase):
         self.assertEqual(led.get(), (1, 2, 3))
 
     @patch('Adafruit_SSD1306.SSD1306_128_64')
-    def test7_Display(self, mock_Adafruit_SSD1306, mock_wiringpi_ISR, mock_wiringpi_pinMode, \
-            mock_wiringpi_setup):
+    def test7_Display(self, mock_Adafruit_SSD1306, mock_wiringpi_ISR, 
+                      mock_pullUpDnControl, mock_wiringpi_pinMode,
+                      mock_wiringpi_setup):
         RESET_PIN = 4
         width = 200
         height = 100
