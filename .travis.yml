@@ -15,7 +15,7 @@ before_install:
 install:
 - python setup.py install
 script:
-- coverage run --branch --source=. setup.py test
+- coverage run --branch --source=. --omit=build setup.py test
 - coverage xml -i
 - sonar-scanner
 deploy:
