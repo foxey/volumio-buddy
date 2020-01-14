@@ -1,1 +1,1 @@
-from volumio_buddy import *
+from test_volumio_buddy import *
