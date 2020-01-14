@@ -9,34 +9,6 @@ from os import path
 from volumio_buddy import __file__ as filename
 from volumio_buddy import RGBLED, VolumioClient, Display
 
-def update_volume(rotary_encoder, client):
-    if time() - client.last_update_time > .1:
-        client.last_update_time = time()
-        if rotary_encoder.direction == RotaryEncoder.LEFT:
-            client.volume_down()
-            print "volume down"
-        elif rotary_encoder.direction == RotaryEncoder.RIGHT:
-            client.volume_up()
-            print "volume up"
-        else:
-            print "unknown rotary encoder event"
-
-def previous_next(rotary_encoder, client):
-    if time() - client.last_update_time > 1:
-        client.last_update_time = time()
-        if rotary_encoder.direction == RotaryEncoder.LEFT:
-            client.previous()
-            print "previous song"
-        elif rotary_encoder.direction == RotaryEncoder.RIGHT:
-            client.next()
-            print "next song"
-        else:
-            print "unknown rotary encoder event"
-
-def toggle_play(client):
-    client.toggle_play()
-    print "play / pause"
-
 def print_state(client, display, led):
 # Tedious input sanitation
     try:
@@ -102,16 +74,6 @@ def print_state(client, display, led):
 def show_menu(display):
 # Display the menu modal for 3 sec
     display.menu(3)
-
-# Rotary encoder 1 pins (WiringPi numbering)
-PB1 = 0
-ROT_ENC_1A = 2
-ROT_ENC_1B = 21
-
-# Rotary encoder 2 pins (WiringPi numbering)
-PB2 = 7
-ROT_ENC_2A = 4
-ROT_ENC_2B = 5
 
 # LED pins (WiringPi numbering)
 LED_RED = 23
