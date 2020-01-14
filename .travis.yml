@@ -3,7 +3,6 @@ language: python
 python:
 - '2.7'
 - pypy
-- pypy-5.3.1
 addons:
   sonarcloud:
     organization: "foxey"
