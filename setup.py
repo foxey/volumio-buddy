@@ -22,7 +22,7 @@ classifiers = ['Development Status :: 4 - Beta',
 from setuptools import setup, find_packages
 setup(
     name="volumio-buddy",
-    version="0.4.0",
+    version="0.4.1",
     author="Michiel Fokke",
     author_email="michiel@fokke.org",
     description="A helper program for Volumio 2 hardware add-on's",
@@ -32,7 +32,7 @@ setup(
     packages=find_packages(),
     scripts=['volumio-buddy.py', 'volumio-buddy-display.py', 'volumio-buddy-buttons.py'],
     dependency_links  = ['https://github.com/adafruit/Adafruit_Python_SSD1306/tarball/master#egg=Adafruit_SSD1306-1.6.1', 'https://github.com/chrisb2/pi_ina219/tarball/master#egg=pi_ina219-1.1.0'],
-    install_requires  = ['RPi.GPIO>=0.6.3', 'Adafruit_SSD1306>=1.6.1', 'wiringpi2>=2.32', 'Pillow==6.2.0', 'socketIO-client-2>=0.7.2', 'pi-ina219'],
+    install_requires  = ['RPi.GPIO>=0.6.3', 'Adafruit_SSD1306>=1.6.1', 'wiringpi2>=2.32', 'Pillow==6.2.2', 'socketIO-client-2>=0.7.2', 'pi-ina219'],
     tests_require = ['mock'],
     test_suite = 'tests',
 
