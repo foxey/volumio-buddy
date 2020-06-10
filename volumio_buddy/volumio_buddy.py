@@ -39,10 +39,14 @@ def volumio_buddy_setup():
         _volumio_buddy_is_setup = True
         wiringpi.wiringPiSetup()
 
+PUD_OFF = wiringpi.GPIO.PUD_OFF
+PUD_UP = wiringpi.GPIO.PUD_UP
+PUD_DOWN = wiringpi.GPIO.PUD_DOWN
+
 class PushButton:
     """ Class to register a callback function for a pushbutton """
 
-    def __init__(self, gpio_pin, minimum_delay = 0.5):
+    def __init__(self, gpio_pin, minimum_delay = 0.5, pud = PUD_OFF):
         volumio_buddy_setup()
         self._callback_function = False
         self._callback_args = False
@@ -50,7 +54,7 @@ class PushButton:
         self.minimum_delay = minimum_delay
         self.gpio_pin = gpio_pin
         wiringpi.pinMode(gpio_pin, wiringpi.GPIO.INPUT)
-        wiringpi.pullUpDnControl(gpio_pin, wiringpi.GPIO.PUD_OFF)
+        wiringpi.pullUpDnControl(gpio_pin, pud)
 
     def set_callback(self, callback_function, *callback_args):
         """ Register a function that is called when the knob is turned """
@@ -71,7 +75,7 @@ class RotaryEncoder:
     LEFT = 1
     RIGHT = 2
 
-    def __init__(self, gpio_pin_a, gpio_pin_b, minimum_delay = 0.5):
+    def __init__(self, gpio_pin_a, gpio_pin_b, minimum_delay = 0.5, pud = PUD_OFF):
         volumio_buddy_setup()
         self._callback_function = False
         self._callback_args = False
@@ -85,8 +89,8 @@ class RotaryEncoder:
         self.gpio_pin_b = gpio_pin_b
         wiringpi.pinMode(gpio_pin_a, wiringpi.GPIO.INPUT)
         wiringpi.pinMode(gpio_pin_b, wiringpi.GPIO.INPUT)
-        wiringpi.pullUpDnControl(gpio_pin_a, wiringpi.GPIO.PUD_OFF)
-        wiringpi.pullUpDnControl(gpio_pin_b, wiringpi.GPIO.PUD_OFF)
+        wiringpi.pullUpDnControl(gpio_pin_a, pud)
+        wiringpi.pullUpDnControl(gpio_pin_b, pud)
 
     def set_callback(self, callback_function, *callback_args):
         """ Register a function that is called when the knob is turned """
