@@ -1,52 +1,33 @@
-[![build status](https://travis-ci.org/foxey/volumio-buddy.svg?branch=master)](https://travis-ci.org/foxey/volumio-buddy)
-[![PyPI version](https://badge.fury.io/py/volumio-buddy.svg)](https://pypi.python.org/pypi/volumio-buddy)
-
 # volumio-buddy
 
-Volumio-buddy is a python library and helper program for Volumio 2.
+# new release!
+
+This release now supports Volumio 3! It's actually an almost complete rewrite of the code, now using Python 3 with asyncio. It doesn't support Volumio 2 anymore, because the underlying OS is too outdated for a smooth migration to Python 3 (Volumio 2 users can still use release 0.4.1).
+
+## Introduction
+
+Volumio-buddy is a python3 library and helper program for Volumio 3.
 It is meant to run on the same host where the Volumio back-end runs and provides the following additional functionality:
 - connect to volumio using the [websockets API](https://volumio.github.io/docs/API/WebSocket_APIs.html)
 - support for GPIO pushbuttons to control volumio
-- support for a rotary encoder to skip through a playlist
-- support for a rotary encoder to adjust the volume
+- support for [rotary encoders](https://en.wikipedia.org/wiki/Incremental_encoder) to adjust the volume and to skip through a playlist
 - RGB LED support
-- SSD1306 OLED 128x64px screen support (I2C)
+- [SSD1306 OLED](https://learn.adafruit.com/monochrome-oled-breakouts/arduino-library-and-examples) 128x64px screen support (I2C)
+- Battery power monitoring with an [INA219](https://learn.adafruit.com/adafruit-ina219-current-sensor-breakout) chip.
 
-## dependencies
-- [socketIO-client-2](https://pypi.python.org/pypi/socketIO-client-2)
-- [WiringPI](http://wiringpi.com/)
-- [PIL](http://effbot.org/zone/pil-index.htm)
-- [Adafruit Python SSD1306](https://github.com/adafruit/Adafruit_Python_SSD1306)
-- [RPi.GPIO](https://sourceforge.net/p/raspberry-gpio-python/wiki/Home/) This package is a dependency of [Adafruit_Python_GPIO](https://github.com/adafruit/Adafruit_Python_GPIO) which is a dependency of Adafruit_Python_SSD1306, but is not listed in setup.py
+## Installation instructions
 
-## fonts
-The [Pix Chicago](http://www.dafont.com/pix-chicago.font) font is provided by Etienne Desclides.
+The package assumes installation on a Debian based distribution for Raspberry Pi with `systemd` based init. If you don't use `systemd`, install the package with `make install` and start the `vbuddy` script manually in the virtual environment.
 
-The [Bitstream Vera Sans](http://ftp.gnome.org/pub/GNOME/sources/ttf-bitstream-vera/1.10/) is one of the [Gnome fonts](https://www.gnome.org/fonts/).
+Edit `src/vbuddy` to reflect your hardware setup. The script ignores the display and battery  monitoring components if they are not found, but you need to update the GPIO pin configuration and the I2C addresses, if you use different ones than I do.
 
-## install
-First, ensure you have JPEG and Freetype support libraries installed:
+If your buttons or rotary encoders need an internal pullup or pulldown resistor, edit `src/vbuddy.service` to include the commandline option `-p up` or `-p down` in the `ExecStart` line.
 
-	apt-get install -y python-dev libjpeg9-dev libfreetype6-dev swig
+Install the service in a separate virtual environment using the following commands:
 
-After that, clone the github repository:
-
-	git clone https://github.com/foxey/volumio-buddy
-	cd volumio-buddy
-
-Then install the library and the script:
-
-	python ./setup.py install
-
-Run the script:
-
-	volumio-buddy.py
-
-## alternative install using pip
-Install dependencies:
-
-	apt-get install -y python-dev libjpeg9-dev libfreetype6-dev swig python-pip
-
-Install volumio buddy:
-
-	pip install volumio-buddy
+```
+make .venv
+. .venv/bin/activate
+make service
+sudo systemctl start vbuddy
+```
