@@ -1,3 +1,7 @@
+
+![build status](https://github.com/foxey/volumio-buddy/actions/workflows/python-package.yml/badge.svg)
+[![PyPI version](https://badge.fury.io/py/volumio-buddy.svg)](https://pypi.python.org/pypi/volumio-buddy)
+
 # volumio-buddy
 
 # new release!
