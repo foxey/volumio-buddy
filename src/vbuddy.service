@@ -1,0 +1,18 @@
+[Unit]
+Description=Volumio Buddy
+After=volumio.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=3
+ExecStart=/home/volumio/volumio-buddy-3/.venv/bin/vbuddy
+SyslogIdentifier=vbuddy
+StandardOutput=syslog
+StandardError=syslog
+User=volumio
+Group=volumio
+
+[Install]
+WantedBy=multi-user.target

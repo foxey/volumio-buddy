@@ -1,0 +1,230 @@
+#!/usr/bin/python3
+# Copyright (c) 2022 Michiel Fokke
+# Author: Michiel Fokke <michiel@fokke.org>
+#
+# This file is part of Volumio-buddy.
+#
+# Volumio-buddy is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# Volumio-buddy is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# Volumio-buddy. If not, see <https://www.gnu.org/licenses/>.
+
+import asyncio
+import functools
+import logging
+import subprocess
+import vb3
+
+# RPi.GPIO mode must be set to GPIO.BCM, since CircuitPython
+# (used for the SSD1306 OLED display) uses that under the hood.
+# Numbers below are BCM numbers (see https://pinout.xyz/):
+PIN_PUSHBUTTON_1 = 4  # GPIO_BOARD: 7
+PIN_ROTARY_ENCODER_1A = 23  # GPIO_BOARD: 16
+PIN_ROTARY_ENCODER_1B = 24  # GPIO_BOARD: 18
+PIN_PUSHBUTTON_2 = 17  # GPIO_BOARD: 11
+PIN_ROTARY_ENCODER_2A = 27  # GPIO_BOARD: 13
+PIN_ROTARY_ENCODER_2B = 5  # GPIO_BOARD: 29
+PIN_LED_RED = 13  # GPIO_BOARD: 33
+PIN_LED_GREEN = 12  # GPIO_BOARD: 32
+PIN_LED_BLUE = 6  # GPIO_BOARD: 31
+
+# I2C address of the SSD1306 display
+#  * 0x3c is the default address for the Adafruit driver
+#  * set to none to use this default
+SSD1306_I2C_ADDR = None
+
+
+# Define function to perform on received events like:
+#  * volumio websocket updates
+#  * button pushes
+#  * rotary encoder turns
+def update_ui(volumio_client, display, led):
+    status_list = {'play': vb3.Display.STATUS_PLAY,
+                   'pause': vb3.Display.STATUS_PAUSE,
+                   'stop': vb3.Display.STATUS_STOP}
+    led_list = {'play': vb3.RGBLED.DIM_GREEN,
+                'pause': vb3.RGBLED.DIM_BLUE,
+                'stop': vb3.RGBLED.DIM_BLUE}
+    state = volumio_client.state.current
+    if display:
+        display.update_main_screen(' - '.join(
+                                              (state['artist'],
+                                               state['album'],
+                                               state['title'])),
+                                   state['duration'],
+                                   state['seek'])
+        if volumio_client.state.changed('volume'):
+            display.volume(state['volume'])
+        if volumio_client.state.changed('status') and state['status'] in status_list.keys():
+            display.status(status_list[state['status']])
+    if volumio_client.state.changed('status') and state['status'] in led_list.keys():
+        led.set(led_list[state['status']])
+    for key, value in volumio_client.state.delta().items():
+        logging.info('state[{}] = \'{}\''.format(key, value))
+
+
+def toggle_play_pause(volumio_client):
+    return volumio_client.toggle_play()
+
+
+def skip_song(rotary_encoder, volumio_client):
+    if rotary_encoder.direction == vb3.RotaryEncoder.LEFT:
+        logging.debug('Skip to previous song')
+        return volumio_client.prev()
+    elif rotary_encoder.direction == vb3.RotaryEncoder.RIGHT:
+        logging.debug('Skip to next song')
+        return volumio_client.next()
+    return None
+
+
+def adjust_volume(rotary_encoder, volumio_client):
+    if rotary_encoder.direction == vb3.RotaryEncoder.LEFT:
+        logging.debug('Turning down the volume')
+        return volumio_client.volume_down()
+    elif rotary_encoder.direction == vb3.RotaryEncoder.RIGHT:
+        logging.debug('Turning up the volume')
+        return volumio_client.volume_up()
+    return None
+
+
+def low_battery_warning(led):
+    led.set(10, 0, 0)
+
+
+def empty_battery():
+    subprocess.call(["/sbin/shutdown", "now"])
+
+
+# Start of main program
+def main():
+    # Setup logging
+    args = vb3.argparser()
+    if 'log' in args.keys():
+        vb3.setup_logging(args['log'])
+
+    if 'pull' in args.keys():
+        if args['pull'] == 'up':
+            pull = vb3.gpio.PUD_UP
+        elif args['pull'] == 'down':
+            pull = vb3.gpio.PUD_DOWN
+        else:
+            pull = vb3.gpio.PUD_OFF
+
+    # Initialize Display
+    #  * if no display is found, display = None
+    try:
+        display = vb3.Display(i2c_addr=SSD1306_I2C_ADDR)
+        display.set_modal_duration(3)
+    except Exception as exception:
+        display = None
+        logging.warning('Cannot initialize display: {} ({})'.format(exception, type(exception).__name__))
+
+    # Initialize LED
+    led = vb3.RGBLED(PIN_LED_RED, PIN_LED_GREEN, PIN_LED_BLUE)
+    led.set(vb3.RGBLED.DIM_BLUE)
+
+    # Initialize INA219 voltage sensor to monitor the battery level
+    try:
+        battery = vb3.Battery()
+        battery.set_warn_function(low_battery_warning, led)
+        battery.set_empty_function(empty_battery)
+    except Exception as exception:
+        battery = None
+        logging.warning('Cannot initialize battery monitor: {} ({})'
+                        .format(exception, type(exception).__name__))
+
+    # Determine network connection
+    network = vb3.Network()
+
+    # Initialize socketio connection to Volumio.
+    #  * this program will abort if the connection fails
+    #  * this program uses the asyncio version of the driver
+    volumio_client = vb3.VolumioClient(display)
+    volumio_client.set_pushState_handler(update_ui, volumio_client, display, led)
+    logging.info('Connecting to {} on port {}'
+                 .format(volumio_client.host, volumio_client.port))
+
+    # Define list with popups
+    if display and battery:
+        popup = vb3.Popup(('Battery: {}%', 'Voltage: {:.2f}V'),
+                          battery.level, battery.voltage)
+        display.add_popup(popup)
+
+    if display and volumio_client:
+        def trackType():
+            if volumio_client.state.current['trackType']:
+                return volumio_client.state.current['trackType']
+            else:
+                return "no track"
+
+        bitdepth = functools.partial(volumio_client.state.get, 'bitdepth')
+
+        def rate():
+            if volumio_client.state.current['samplerate']:
+                return volumio_client.state.current['samplerate']
+            else:
+                return volumio_client.state.current['bitrate']
+
+        popup = vb3.Popup(('{}', '{} {}'),
+                          trackType, bitdepth, rate)
+        display.add_popup(popup)
+
+    if display and network:
+        popup = vb3.Popup(('ssid: {}', 'ip:{}'),
+                          network.wpa_supplicant['ssid'], network.my_ip)
+        display.add_popup(popup)
+        popup = vb3.Popup(('ssid: {}', 'pw: {}'),
+                          network.hostapd["ssid"], network.hostapd["wpa_passphrase"])
+        display.add_popup(popup)
+
+    # Initialize buttons and rotary encoders
+    button = dict()
+
+    # Initialize 1st push button (to cycle through the popups)
+    button[1] = vb3.PushButton(PIN_PUSHBUTTON_1, pull=pull)
+    if display:
+        button[1].set_callback(display.show_next_popup)
+
+    # Initialize 1st rotary encoder (to skip to the previous and next song)
+    button[2] = vb3.RotaryEncoder(PIN_ROTARY_ENCODER_1A, PIN_ROTARY_ENCODER_1B,
+                                  minimum_delay=.5, pull=pull)
+    button[2].set_callback(skip_song, button[2], volumio_client)
+
+    # Initialize 2nd push button (to toggle between play and pause)
+    button[3] = vb3.PushButton(PIN_PUSHBUTTON_2, pull=pull)
+    button[3].set_callback(toggle_play_pause, volumio_client)
+
+    # Initialize 2nd rotary encoder (to adjust the volume)
+    button[4] = vb3.RotaryEncoder(PIN_ROTARY_ENCODER_2A, PIN_ROTARY_ENCODER_2B,
+                                  pull=pull)
+    button[4].set_callback(adjust_volume, button[4], volumio_client)
+
+    # Setup asyncio tasks to handle websocket events and periodically update the display
+    loop = asyncio.get_event_loop()
+    # Cleanup nicely after receiving an OS signal
+    vb3.setup_exception_handling(volumio_client, display, loop)
+
+    try:
+        if display:
+            loop.create_task(display.updater())
+        if battery:
+            loop.create_task(battery.monitor())
+        loop.create_task(volumio_client.connect())
+        loop.run_forever()
+    finally:
+        # Cleanup nicely after a keyboard interrupt
+        for button in button.values():
+            button.off()
+        led.off()
+        loop.run_until_complete(vb3.shutdown(volumio_client, display, loop))
+        loop.close()
+        logging.info('Volumio Buddy terminated.')
+
+
+if __name__ == '__main__':
+    main()
