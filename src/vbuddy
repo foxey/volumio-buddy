@@ -93,7 +93,7 @@ def adjust_volume(rotary_encoder, volumio_client):
 
 
 def low_battery_warning(led):
-    led.set(10, 0, 0)
+    led.set(vb3.RGBLED.DIM_RED)
 
 
 def empty_battery():
