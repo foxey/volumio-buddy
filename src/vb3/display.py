@@ -107,7 +107,7 @@ class Display:
             filename = os.path.dirname(os.path.realpath(__file__)) + '/volumio.ppm'
         try:
             self._logo_image = Image.open(filename). \
-                resize((self.width, self.height), Image.ANTIALIAS).convert('1')
+                resize((self.width, self.height), Image.LANCZOS).convert('1')
             self._image.paste(self._logo_image)
             self.show(self._image)
         except IOError:
