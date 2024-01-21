@@ -21,7 +21,7 @@ class Network(object):
         self.hostapd = dict()
         self.wpa_supplicant = dict()
         try:
-            file = open('/etc/hostapd/hostapd.conf')
+            file = open('/etc/hostapd/hostapd.tmpl')
             for line in file:
                 try:
                     key, value = line.split('=')
